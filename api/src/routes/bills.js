@@ -20,18 +20,15 @@ router.get("/new-numbers", auth, async (req, res) => {
       business.lastReceiptNumber = 0;
       business.lastReceiptDate = today;
     }
-    console.log("business.lastReceiptNumber", business.lastReceiptNumber);
 
     business.lastReceiptNumber += 1;
     const receiptNo = `${today}-${business.lastReceiptNumber
       .toString()
       .padStart(1, "0")}`;
-    console.log("receiptNo", receiptNo);
 
     business.lastInvoiceNumber = business.lastInvoiceNumber || 0;
     business.lastInvoiceNumber += 1;
     const invoiceNo = business.lastInvoiceNumber.toString().padStart(1, "0");
-    console.log("invoiceNo", invoiceNo);
     res.json({ receiptNo, invoiceNo });
   } catch (error) {
     console.error(error);
@@ -40,7 +37,6 @@ router.get("/new-numbers", auth, async (req, res) => {
 });
 
 router.get("/transactions", auth, async (req, res) => {
-  console.log(req.businessId);
   try {
     const transactions = await Transaction.find({
       businessId: req.businessId,

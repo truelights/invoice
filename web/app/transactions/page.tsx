@@ -171,9 +171,9 @@ const TransactionsPage = () => {
                   <div className="text-right">
                     <p
                       className={`font-bold ${
-                        transaction.billType === "sales"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        transaction.dataSnapshot.paymentType === "credit"
+                          ? "text-red-600"
+                          : "text-green-600"
                       }`}
                     >
                       ₹{transaction.dataSnapshot.netAmount.toFixed(2)}

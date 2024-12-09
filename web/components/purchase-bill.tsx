@@ -99,9 +99,7 @@ export default function PurchaseBill() {
   );
 
   useEffect(() => {
-    console.log("Settings in PurchaseBill:", settings);
     if (settings) {
-      console.log("Setting business details:", settings);
       setExpenses(
         settings.expenseLabels?.map((label) => ({ type: label, amount: 0 })) ||
           []
@@ -192,9 +190,9 @@ export default function PurchaseBill() {
     };
 
     try {
-      const response = await createBill(billData);
-      console.log("Bill saved:", response.data);
+      await createBill(billData);
       fetchNewBillNumbers();
+      alert("Invoice saved successfully!, Refresh before creating new Invoice");
     } catch (error) {
       console.error("Error saving bill:", error);
     }

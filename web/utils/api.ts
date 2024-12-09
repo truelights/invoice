@@ -5,11 +5,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const api = axios.create({
   baseURL: API_URL,
 });
-
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    // window.location.replace("/login");
   }
   return config;
 });
@@ -45,6 +46,5 @@ export const updateBill = (id: string, billData: any) =>
 export const deleteBill = (id: string) => api.delete(`/bills/${id}`);
 
 export const transactions = () => api.get("/bills/transactions");
-
 
 export default api;
