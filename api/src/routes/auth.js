@@ -17,18 +17,24 @@ router.post("/register", upload.single("logo"), async (req, res) => {
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
-    console.log(req.file.path);
+
+    let logoUrl = null; // Default to null if no logo is uploaded
+
+    // Upload logo to Cloudinary if file exists
+    if (req.file) {
+      console.log(req.file.path);
+      const uploadResult = await uploadOnCloudinary(req.file.path);
+      logoUrl = uploadResult.secure_url;
+      console.log(logoUrl);
+    }
 
     // Create new business with optional logo
-    const logoUrl = await uploadOnCloudinary(req.file.path);
-    console.log(logoUrl);
-
     const business = new Business({
       name: businessName || "Sample Business Name",
       gst: gst || "GST000000",
       address: address || "Sample Address",
       phone: phone || "000-000-0000",
-      logo: logoUrl.secure_url, // Store the logo path here
+      logo: logoUrl, // Use the logo URL if available
       expenseLabels: ["Sample Expense"],
       products: [{ name: "Sample Product", price: 100 }],
       customers: [
