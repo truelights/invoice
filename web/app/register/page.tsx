@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { register } from "@/utils/api";
 import { AxiosError } from "axios";
-
 type RegistrationData = {
   email: string;
   password: string;
