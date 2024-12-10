@@ -65,10 +65,8 @@ export default function Register() {
     if (!formData.password) errors.password = "Password is required.";
     if (!formData.businessName)
       errors.businessName = "Business name is required.";
-    if (!formData.gst) errors.gst = "GST number is required.";
     if (!formData.address) errors.address = "Address is required.";
     if (!formData.phone) errors.phone = "Phone number is required.";
-    if (!logo) errors.logo = "Logo is required.";
 
     // Set errors state
     setFormErrors(errors);
@@ -178,20 +176,6 @@ export default function Register() {
                   <p className="text-red-500">{formErrors.businessName}</p>
                 )}
               </div>
-              <div>
-                <Label htmlFor="gst">GST Number</Label>
-                <Input
-                  id="gst"
-                  name="gst"
-                  value={formData.gst}
-                  onChange={handleChange}
-                  placeholder="Enter your GST number"
-                  required
-                />
-                {formErrors.gst && (
-                  <p className="text-red-500">{formErrors.gst}</p>
-                )}
-              </div>
             </div>
 
             {/* Right Column */}
@@ -223,20 +207,6 @@ export default function Register() {
                 />
                 {formErrors.phone && (
                   <p className="text-red-500">{formErrors.phone}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="logo">Business Logo</Label>
-                <Input
-                  id="logo"
-                  name="logo"
-                  type="file"
-                  onChange={handleChange}
-                  accept="image/*"
-                  required
-                />
-                {formErrors.logo && (
-                  <p className="text-red-500">{formErrors.logo}</p>
                 )}
               </div>
             </div>

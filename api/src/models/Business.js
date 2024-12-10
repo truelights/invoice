@@ -9,7 +9,7 @@ const PlanEnum = Object.freeze({
 
 const businessSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  gst: { type: String, required: true },
+  gst: { type: String },
   address: { type: String, required: true },
   phone: { type: String, required: true },
   logo: { type: String },
