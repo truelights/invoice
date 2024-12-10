@@ -99,7 +99,7 @@ export default function Register() {
       const response = await register(formDataToSend);
 
       login(response.data.token);
-      router.push("/");
+      router.push("/invoice");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         // Check if error is an AxiosError
