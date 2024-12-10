@@ -9,23 +9,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { register } from "@/utils/api";
-import { AxiosError } from "axios"; // Add this if using Axios
+import { AxiosError } from "axios";
 
 type RegistrationData = {
   email: string;
   password: string;
+  confirmPassword: string;
   businessName: string;
   gst: string;
   address: string;
+  city: string;
+  state: string;
   phone: string;
 };
 
 type FormErrors = {
   email?: string;
   password?: string;
+  confirmPassword?: string;
   businessName?: string;
   gst?: string;
   address?: string;
+  city?: string;
+  state?: string;
   phone?: string;
   logo?: string;
 };
@@ -34,9 +40,12 @@ export default function Register() {
   const [formData, setFormData] = useState<RegistrationData>({
     email: "",
     password: "",
+    confirmPassword: "",
     businessName: "",
     gst: "",
     address: "",
+    city: "",
+    state: "",
     phone: "",
   });
   const [logo, setLogo] = useState<File | null>(null);
@@ -60,53 +69,55 @@ export default function Register() {
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
 
-    // Check if any field is empty
     if (!formData.email) errors.email = "Email is required.";
     if (!formData.password) errors.password = "Password is required.";
+    if (!formData.confirmPassword)
+      errors.confirmPassword = "Confirm password is required.";
+    if (formData.password !== formData.confirmPassword)
+      errors.confirmPassword = "Passwords do not match.";
     if (!formData.businessName)
       errors.businessName = "Business name is required.";
     if (!formData.address) errors.address = "Address is required.";
+    if (!formData.city) errors.city = "City is required.";
+    if (!formData.state) errors.state = "State is required.";
     if (!formData.phone) errors.phone = "Phone number is required.";
 
-    // Set errors state
     setFormErrors(errors);
 
-    // If there are errors, return false
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent, isPaidPlan: boolean) => {
     e.preventDefault();
 
-    // Validate form fields before submitting
     if (!validateForm()) {
-      return; // Don't submit if there are validation errors
+      return;
     }
 
     try {
-      // Send regular form data as an object
-      const formDataToSend = { ...formData, isPaidPlan };
+      const mergedAddress = `${formData.address}, ${formData.city}, ${formData.state}`;
+      const formDataToSend = {
+        ...formData,
+        address: mergedAddress,
+        isPaidPlan,
+      };
 
-      // If logo is available, append it to FormData for file upload
       const formDataForFile = new FormData();
       if (logo) {
         formDataForFile.append("logo", logo);
       }
 
-      // Send the form data (you can choose between sending regular object or FormData depending on your backend)
       const response = await register(formDataToSend);
 
       login(response.data.token);
       router.push("/invoice");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        // Check if error is an AxiosError
         console.error(error);
         const errorMessage =
           error?.response?.data?.message || "An unexpected error occurred.";
         setError(errorMessage);
       } else {
-        // Handle other types of errors
         console.error("Unexpected error:", error);
         setError("An unexpected error occurred.");
       }
@@ -163,6 +174,21 @@ export default function Register() {
                 )}
               </div>
               <div>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  required
+                />
+                {formErrors.confirmPassword && (
+                  <p className="text-red-500">{formErrors.confirmPassword}</p>
+                )}
+              </div>
+              <div>
                 <Label htmlFor="businessName">Business Name</Label>
                 <Input
                   id="businessName"
@@ -195,6 +221,34 @@ export default function Register() {
                 )}
               </div>
               <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Enter your city"
+                  required
+                />
+                {formErrors.city && (
+                  <p className="text-red-500">{formErrors.city}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="Enter your state"
+                  required
+                />
+                {formErrors.state && (
+                  <p className="text-red-500">{formErrors.state}</p>
+                )}
+              </div>
+              <div>
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
@@ -208,6 +262,16 @@ export default function Register() {
                 {formErrors.phone && (
                   <p className="text-red-500">{formErrors.phone}</p>
                 )}
+              </div>
+              <div>
+                <Label htmlFor="logo">Logo</Label>
+                <Input
+                  id="logo"
+                  name="logo"
+                  type="file"
+                  onChange={handleChange}
+                  accept="image/*"
+                />
               </div>
             </div>
           </div>
