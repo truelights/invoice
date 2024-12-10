@@ -85,7 +85,7 @@ export function ProductSettings({ settings, onUpdate }: ProductSettingsProps) {
           {products.map((product) => (
             <li key={product._id} className="flex justify-between items-center">
               <span>
-                {product.name} - ${product.price}
+                {product.name} - ₹{product.price}
               </span>
               <Button
                 type="button"
