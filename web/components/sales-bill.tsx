@@ -89,6 +89,9 @@ export default function SalesBill() {
   const [billDate, setBillDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const initialCommission = settings?.commission;
+  const [Commission, setCommission] = useState<number>(0);
+  console.log(initialCommission, Commission);
 
   useEffect(() => {
     if (settings) {
@@ -99,6 +102,7 @@ export default function SalesBill() {
           amount: 0,
         }))
       );
+      setCommission(settings?.commission);
       fetchNewBillNumbers();
     }
   }, [settings]);
@@ -124,13 +128,17 @@ export default function SalesBill() {
     field: keyof BillItem,
     value: number | string | boolean
   ) => {
-    const newItems = [...items];
-    newItems[index] = {
-      ...newItems[index],
-      [field]: value,
-    };
-    newItems[index].amount = newItems[index].bags * newItems[index].rate;
-    setItems(newItems);
+    setItems((prevItems) => {
+      const newItems = [...prevItems];
+      newItems[index] = {
+        ...newItems[index],
+        [field]: value,
+      };
+      if (field === "bags" || field === "rate") {
+        newItems[index].amount = newItems[index].bags * newItems[index].rate;
+      }
+      return newItems;
+    });
   };
 
   const removeItem = (index: number) => {
@@ -153,7 +161,7 @@ export default function SalesBill() {
       (sum, expense) => sum + expense.amount,
       0
     );
-    const commissionAmount = business?.commission || 0;
+    const commissionAmount = Commission || 0;
 
     const totalCommission = items.reduce((sum, item) => {
       const itemCommission = item.applyCommission ? commissionAmount : 0;
@@ -170,8 +178,169 @@ export default function SalesBill() {
     };
   };
 
-  const handlePrint = () => {
-    window.print();
+  const validateItems = (): boolean => {
+    for (const item of items) {
+      if (!item.item || item.item.trim() === "") {
+        alert("Please select a product for all items.");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const generatePrintContent = async () => {
+    console.log("Settings in generatePrintContent:", settings);
+    const {
+      totalAmount,
+      totalExpenses,
+      netAmount,
+      totalOtherCharges,
+      totalCommission,
+    } = calculateTotals();
+    console.log(totalCommission);
+
+    let logoDataUrl = "";
+    if (settings?.logo) {
+      try {
+        const response = await fetch(settings.logo);
+        const blob = await response.blob();
+        logoDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error("Error loading logo:", error);
+      }
+    }
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Purchase Bill</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f2f2f2;
+          }
+          .totals {
+            font-weight: bold;
+          }
+          .signature {
+            margin-top: 50px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            text-align: right;
+          }
+            table, tr {
+    border: none;
+}
+        </style>
+      </head>
+      <body>
+        ${
+          logoDataUrl
+            ? `<img src="${logoDataUrl}" alt="Business Logo" style="width: 100px; height: auto; display: block; margin-bottom: 10px;">`
+            : ""
+        }
+        <h1>Sales Bill</h1>
+        <p><strong>Date:</strong> ${billDate}</p>
+        <p><strong>Batch No:</strong> ${receiptNo}</p>
+        <p><strong>Receipt No:</strong> ${invoiceNo}</p>
+        <p><strong>Customer Details:</strong> ${customerDetails}</p>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Sr</th>
+              <th>Item</th>
+              <th>Bags</th>
+              <th>Weight</th>
+              <th>Rate</th>
+              <th>Amount</th>
+              <th>Expense</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items
+              .map(
+                (item, index) => `
+              <tr>
+                <td>${item.sr}</td>
+                <td>${item.item}</td>
+                <td>${item.bags}</td>
+                <td>${item.weight}</td>
+                <td>₹${item.rate.toFixed(2)}</td>
+                <td>₹${item.amount.toFixed(2)}</td>
+                <td>${
+                  index < expenses.length
+                    ? `${expenses[index].type}: ₹${expenses[
+                        index
+                      ].amount.toFixed(2)}`
+                    : ""
+                }</td>
+              </tr>
+            `
+              )
+              .join("")}
+            <tr class="totals">
+              <td colspan="5"></td>
+              <td>Total Amount: ₹${totalAmount.toFixed(2)}</td>
+              <td>Total Expenses: ₹${totalExpenses.toFixed(2)}</td>
+            </tr>
+            <tr class="totals">
+              <td colspan="5"></td>
+              <td>Other Charges: ₹${totalOtherCharges.toFixed(2)}</td>
+            
+            </tr>
+            <tr class="totals">
+              <td colspan="5"></td>
+              <td colspan="2">Net Amount: ₹${netAmount.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="signature">
+          <p>Authorized Signature: _______________________</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const handlePrint = async () => {
+    if (!validateItems()) return;
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      const content = await generatePrintContent();
+      printWindow.document.write(content);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    } else {
+      alert("Please allow popups for this website to print the bill.");
+    }
   };
 
   const fetchNewBillNumbers = async () => {
@@ -186,6 +355,7 @@ export default function SalesBill() {
   };
 
   const handleSave = async () => {
+    if (!validateItems()) return;
     const {
       totalAmount,
       totalOtherCharges,
@@ -254,6 +424,13 @@ export default function SalesBill() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto p-6 print:shadow-none">
+      <label htmlFor="commission">Comission</label>
+      <Input
+        type="number"
+        id="commission"
+        value={Commission}
+        onChange={(e) => setCommission(Number(e.target.value))}
+      />
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start space-y-4 sm:space-y-0 print:pb-0">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-24 h-24 border rounded-lg flex items-center justify-center print:border-black">
@@ -351,21 +528,25 @@ export default function SalesBill() {
                   <TableCell>{item.sr}</TableCell>
                   <TableCell>
                     <Select
+                      value={item.item}
                       onValueChange={(value) => {
-                        const selectedProduct = settings.products.find(
+                        const selectedProduct = settings?.products.find(
                           (p) => p.name === value
                         );
                         if (selectedProduct) {
                           updateItem(index, "item", selectedProduct.name);
                           updateItem(index, "rate", selectedProduct.price);
+                          // Recalculate the amount
+                          const newAmount = item.bags * selectedProduct.price;
+                          updateItem(index, "amount", newAmount);
                         }
                       }}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select a product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {settings.products.map((product, productIndex) => (
+                        {settings?.products.map((product, productIndex) => (
                           <SelectItem key={productIndex} value={product.name}>
                             {product.name}
                           </SelectItem>

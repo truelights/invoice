@@ -24,7 +24,7 @@ export default function Login() {
     try {
       const response = await login(email, password);
       authLogin(response.data.token);
-      router.push("/invoice");
+      router.push("/invoice-/invoice");
     } catch (error) {
       console.log(error);
 

@@ -20,10 +20,9 @@ export function useSettings() {
 
   const fetchSettings = async () => {
     try {
-      // console.log("Fetching settings...");
       setLoading(true);
       const response = await getSettings();
-      // console.log("Settings fetched:", response.data);
+
       setSettings(response.data);
       setError(null);
     } catch (error) {
@@ -36,10 +35,8 @@ export function useSettings() {
 
   const updateSettingsData = async (newSettings: Settings) => {
     try {
-      // console.log("Updating settings...");
       await updateSettings(newSettings);
       setSettings(newSettings);
-      // console.log("Settings updated successfully");
     } catch (error) {
       console.error("Error updating settings:", error);
       setError(error as Error);

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Define the Customer type
 type Customer = {
   _id: string;
   name: string;
@@ -11,12 +10,10 @@ type Customer = {
   phone: string;
 };
 
-// Define the Settings type that includes the customers field
 type Settings = {
   customers: Customer[];
 };
 
-// Define the props for the component
 type CustomerSettingsProps = {
   settings: Settings;
   onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
@@ -28,7 +25,7 @@ export function CustomerSettings({
 }: CustomerSettingsProps) {
   const [customers, setCustomers] = useState<Customer[]>(settings.customers);
   const [newCustomer, setNewCustomer] = useState<Customer>({
-    _id: "", // empty string as placeholder
+    _id: "",
     name: "",
     address: "",
     phone: "",
@@ -42,7 +39,7 @@ export function CustomerSettings({
     ) {
       setCustomers((prev) => [
         ...prev,
-        { ...newCustomer, _id: Date.now().toString() }, // Use Date.now() to generate unique _id
+        { ...newCustomer, _id: Date.now().toString() },
       ]);
       setNewCustomer({ _id: "", name: "", address: "", phone: "" });
     }

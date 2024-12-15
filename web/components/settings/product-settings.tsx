@@ -3,19 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Define the Product type
 type Product = {
   _id: string;
   name: string;
   price: number;
 };
 
-// Define the Settings type that includes the products field
 type Settings = {
   products: Product[];
 };
 
-// Define the props for the component
 type ProductSettingsProps = {
   settings: Settings;
   onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
@@ -33,9 +30,9 @@ export function ProductSettings({ settings, onUpdate }: ProductSettingsProps) {
     if (newProduct.name.trim() && newProduct.price > 0) {
       setProducts((prev) => [
         ...prev,
-        { ...newProduct, _id: Date.now().toString() }, // Using Date.now() for unique _id
+        { ...newProduct, _id: Date.now().toString() },
       ]);
-      setNewProduct({ _id: "", name: "", price: 0 }); // Reset newProduct after adding
+      setNewProduct({ _id: "", name: "", price: 0 });
     }
   };
 
@@ -70,7 +67,7 @@ export function ProductSettings({ settings, onUpdate }: ProductSettingsProps) {
           onChange={(e) =>
             setNewProduct((prev) => ({
               ...prev,
-              price: Number(e.target.value), // Ensure the price is always a number
+              price: Number(e.target.value),
             }))
           }
           placeholder="Enter product price"

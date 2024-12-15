@@ -31,10 +31,9 @@ import {
 } from "@/components/ui/drawer";
 import { ReportDetails } from "@/components/report-details";
 import { Button } from "@/components/ui/button";
-// Extend Day.js with the isBetween plugin
+
 dayjs.extend(isBetween);
 
-// Type Definitions
 interface Bill {
   _id: string;
   type: "purchase" | "sales";
@@ -75,7 +74,6 @@ interface ReportTableProps {
   type: "purchase" | "sales";
 }
 
-// Main ReportsPage Component
 const ReportsPage: React.FC = () => {
   const [bills, setBills] = useState<Bill[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -224,7 +222,6 @@ interface ReportTableProps {
   onRowClick: (bill: Bill) => void;
 }
 
-// ReportTable Component (remains the same as in the original code)
 const ReportTable: React.FC<ReportTableProps> = ({
   bills,
   totals,

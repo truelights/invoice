@@ -3,12 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Define the Settings type
 type Settings = {
   expenseLabels: string[];
 };
 
-// Define the props for the component
 type ExpenseSettingsProps = {
   settings: Settings;
   onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;

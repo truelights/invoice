@@ -1,15 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { register } from "@/utils/api";
 import { AxiosError } from "axios";
+import axios from "axios";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayFailedResponse {
+  error: {
+    code: string;
+    description: string;
+    source: string;
+    step: string;
+    reason: string;
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
+}
+
 type RegistrationData = {
   email: string;
   password: string;
@@ -20,6 +54,7 @@ type RegistrationData = {
   city: string;
   state: string;
   phone: string;
+  planId: string;
 };
 
 type FormErrors = {
@@ -33,7 +68,19 @@ type FormErrors = {
   state?: string;
   phone?: string;
   logo?: string;
+  planId?: string;
 };
+
+type Plan = {
+  _id: string;
+  name: string;
+  price: number;
+};
+interface PaymentData {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
 
 export default function Register() {
   const [formData, setFormData] = useState<RegistrationData>({
@@ -46,12 +93,37 @@ export default function Register() {
     city: "",
     state: "",
     phone: "",
+    planId: "",
   });
   const [logo, setLogo] = useState<File | null>(null);
   const [error, setError] = useState<string>("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { login } = useAuth();
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/plans`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch plans");
+        }
+        const data = await response.json();
+        setPlans(data);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+        setError("Failed to load plans. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -63,6 +135,10 @@ export default function Register() {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handlePlanChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, planId: value }));
   };
 
   const validateForm = (): boolean => {
@@ -80,13 +156,107 @@ export default function Register() {
     if (!formData.city) errors.city = "City is required.";
     if (!formData.state) errors.state = "State is required.";
     if (!formData.phone) errors.phone = "Phone number is required.";
+    if (!formData.planId) errors.planId = "Please select a plan.";
 
     setFormErrors(errors);
 
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent, isPaidPlan: boolean) => {
+  const createOrder = (planId: string) =>
+    api.post("/payments/create-order", { planId });
+
+  const verifyPayment = (paymentData: PaymentData) =>
+    api.post("/payments/verify-payment", paymentData);
+
+  const register = async (userData: {
+    email: string;
+    password: string;
+    businessName: string;
+    gst: string;
+    address: string;
+    phone: string;
+    planId: string;
+    paymentId?: string;
+    orderId?: string;
+    signature?: string;
+  }) => {
+    try {
+      console.log("Starting registration flow");
+
+      // First, create an order
+      const orderResponse = await createOrder(userData.planId);
+      const { id: orderId, amount } = orderResponse.data;
+      console.log("Order created successfully:", orderResponse);
+
+      // Initialize Razorpay payment
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: amount,
+        currency: "INR",
+        name: "Invoice App",
+        description: "Plan Subscription",
+        order_id: orderId,
+        handler: async (response: RazorpayResponse) => {
+          try {
+            console.log("Payment handler triggered");
+
+            // Verify the payment
+            await verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            console.log("Payment verified successfully");
+
+            // If payment is verified, proceed with registration
+            const registrationData = {
+              ...userData,
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+            };
+            console.log("Registration data prepared:", registrationData);
+
+            const registrationResponse = await api.post(
+              "/auth/register",
+              registrationData
+            );
+            console.log("Registration response:", registrationResponse);
+
+            // Handle login after successful registration
+            login(registrationResponse.data.token);
+
+            // Redirect to the invoice page
+            router.push("/invoice-/invoice");
+          } catch (error) {
+            console.error(
+              "Error during payment verification or registration:",
+              error
+            );
+            throw new Error("Payment verification or registration failed.");
+          }
+        },
+        prefill: {
+          email: userData.email,
+          contact: userData.phone,
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+      paymentObject.on("payment.failed", (response: RazorpayFailedResponse) => {
+        console.error("Payment failed:", response);
+        throw new Error("Payment failed");
+      });
+    } catch (error) {
+      console.error("Error in registration flow:", error);
+      throw error; // Re-throw the error for further handling
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -95,21 +265,19 @@ export default function Register() {
 
     try {
       const mergedAddress = `${formData.address}, ${formData.city}, ${formData.state}`;
-      const formDataToSend = {
+      const registrationData = {
         ...formData,
         address: mergedAddress,
-        isPaidPlan,
       };
+      const formDataObj = new FormData();
+      Object.entries(registrationData).forEach(([key, value]) => {
+        formDataObj.append(key, value as string);
+      });
 
-      const formDataForFile = new FormData();
       if (logo) {
-        formDataForFile.append("logo", logo);
+        formDataObj.append("logo", logo); // Include logo if uploaded
       }
-
-      const response = await register(formDataToSend);
-
-      login(response.data.token);
-      router.push("/invoice");
+      await register(registrationData);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         console.error(error);
@@ -122,6 +290,10 @@ export default function Register() {
       }
     }
   };
+
+  if (isLoading) {
+    return <div>Loading plans...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
@@ -138,7 +310,7 @@ export default function Register() {
         </div>
 
         {/* Form */}
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
@@ -272,6 +444,27 @@ export default function Register() {
                   accept="image/*"
                 />
               </div>
+              <div>
+                <Label htmlFor="plan">Select a Plan</Label>
+                <Select
+                  value={formData.planId}
+                  onValueChange={handlePlanChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plans.map((plan) => (
+                      <SelectItem key={plan._id} value={plan._id}>
+                        {plan.name} - ₹{plan.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.planId && (
+                  <p className="text-red-500">{formErrors.planId}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -281,21 +474,13 @@ export default function Register() {
             </p>
           )}
 
-          {/* Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Submit Button */}
+          <div className="flex justify-center">
             <Button
               type="submit"
-              onClick={(e) => handleSubmit(e, true)}
-              className="w-full bg-blue-500 hover:bg-blue-600"
+              className="w-full md:w-auto px-8 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
             >
-              Signup and Buy Plan
-            </Button>
-            <Button
-              type="submit"
-              onClick={(e) => handleSubmit(e, false)}
-              className="w-full bg-blue-500 hover:bg-blue-600"
-            >
-              Start Free Trial- 14 Days
+              Register and Pay
             </Button>
           </div>
         </form>

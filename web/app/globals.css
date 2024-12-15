@@ -83,9 +83,40 @@
     @apply bg-background text-foreground;
   }
 }
+
 @media print {
-  .print-no-border {
-    border: none !important;
-    box-shadow: none !important;
+  @page {
+    margin: 0.5cm;
   }
+
+  body {
+    print-color-adjust: exact;
+  }
+
+  .print-area {
+    background: white;
+  }
+
+  input {
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  button {
+    display: none !important;
+  }
+}
+
+table, tr, td {
+    border: none;
 }

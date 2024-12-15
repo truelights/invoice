@@ -15,7 +15,7 @@ interface Transaction {
   dataSnapshot: {
     invoiceNo: string;
     netAmount: number;
-    paymentType: string; // Changed from optional to required
+    paymentType: string;
     duedate?: string;
     recievedAmount: number;
   };
@@ -24,7 +24,6 @@ interface Transaction {
 interface BillUpdates {
   recievedAmount?: number;
   paymentType?: string;
-  // Add other possible update fields here
 }
 
 const TransactionsPage = () => {
@@ -69,14 +68,13 @@ const TransactionsPage = () => {
   const handleTransactionClick = async (transaction: Transaction) => {
     try {
       const response = await getBill(transaction.billId);
-      const billDetails = response.data; // Extract data from Axios response
+      const billDetails = response.data;
 
-      // Ensure billDetails has the correct shape
       setSelectedBill({
         ...transaction,
         dataSnapshot: {
           ...transaction.dataSnapshot,
-          ...billDetails?.dataSnapshot, // Optional chaining in case dataSnapshot is missing
+          ...billDetails?.dataSnapshot,
           paymentType:
             billDetails?.dataSnapshot?.paymentType ||
             transaction.dataSnapshot.paymentType ||
@@ -94,7 +92,6 @@ const TransactionsPage = () => {
       const response = await updateBill(billId, updates);
 
       if (response.data) {
-        // Update the local state with the updated bill
         setTransactionData((prevData) =>
           prevData.map((transaction) =>
             transaction.billId === billId

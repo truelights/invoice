@@ -9,33 +9,30 @@ import {
 } from "@/components/ui/table";
 import dayjs from "dayjs";
 
-// Define Item type
 interface Item {
   item: string;
   bags: number;
   weight: number;
-  amount: number; // Amount should be a number
+  amount: number;
 }
 
-// Define Expense type
 interface Expense {
   type: string;
-  amount: number; // Amount should be a number
+  amount: number;
 }
 
-// Define Bill type
 interface Bill {
-  type: "purchase" | "sales"; // Only two valid types
+  type: "purchase" | "sales";
   invoiceNo: string;
-  date: string; // Assuming it's a string or Date object
-  vendorDetails?: string; // Optional for sales reports, but required for purchases
+  date: string;
+  vendorDetails?: string;
   paymentType: string;
-  items: Item[]; // Array of items
-  expenses: Expense[]; // Array of expenses
-  totalAmount: number; // Total amount, should be a number
-  totalExpense: number; // Total expense, should be a number
-  netAmount: number; // Net amount, should be a number
-  recievedAmount: number; // Received amount, should be a number
+  items: Item[];
+  expenses: Expense[];
+  totalAmount: number;
+  totalExpense: number;
+  netAmount: number;
+  recievedAmount: number;
 }
 
 interface ReportDetailsProps {

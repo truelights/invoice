@@ -1,0 +1,119 @@
+@media print {
+  /* Hide all other elements */
+  body > *:not(.print-area) {
+    display: none !important;
+  }
+
+  /* Show the print area */
+  .print-area {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Reset page margins */
+  @page {
+    margin: 0.5cm;
+    size: A4;
+  }
+
+  /* Ensure the invoice fits on one page */
+  .print-area {
+    page-break-inside: avoid;
+  }
+
+  /* Remove backgrounds and shadows */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure text is black for better printing */
+  body {
+    color: black !important;
+  }
+
+  /* Show borders in black */
+  .print-border, table, th, td {
+    border: 1px solid black !important;
+  }
+
+  /* Ensure all content is visible */
+  .print-area * {
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  /* Force table to fit on one page */
+  table {
+    page-break-inside: avoid;
+  }
+
+  /* Adjust font sizes for better readability */
+  body {
+    font-size: 10pt;
+  }
+
+  h1 {
+    font-size: 14pt;
+  }
+
+  h2 {
+    font-size: 12pt;
+  }
+
+  h3 {
+    font-size: 11pt;
+  }
+
+  /* Adjust layout for printing */
+  .print-area .grid {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr !important;
+  }
+
+  /* Ensure tables fit within their containers */
+  .print-area table {
+    font-size: 8pt;
+    width: 100% !important;
+  }
+
+  /* Reduce padding for more compact layout */
+  .print-area td,
+  .print-area th {
+    padding: 2px !important;
+  }
+
+  /* Reduce spacing between elements */
+  .print-area .space-y-4 {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Adjust input fields for printing */
+  .print-area input {
+    border: none !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+  }
+
+  /* Hide unnecessary elements when printing */
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Ensure footer stays at the bottom */
+  .print-area {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+  }
+
+  .print-area > :last-child {
+    margin-top: auto !important;
+  }
+}
+
+table, tr, td {
+    border: none;
+}

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Define the Settings type
 type Settings = {
   name: string;
   gst: string;
@@ -11,14 +10,12 @@ type Settings = {
   phone: string;
 };
 
-// Define the props for the component
 type CompanySettingsProps = {
   settings: Settings;
   onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
 };
 
 export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
-  // Typing the formData state with the Settings type
   const [formData, setFormData] = useState<Settings>({
     name: settings.name,
     gst: settings.gst,
@@ -26,7 +23,6 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
     phone: settings.phone,
   });
 
-  // Handle changes to the form inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -36,7 +32,7 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Send the updated form data to onUpdate
+
     await onUpdate(formData);
   };
 
