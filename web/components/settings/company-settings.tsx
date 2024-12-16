@@ -8,6 +8,7 @@ type Settings = {
   gst: string;
   address: string;
   phone: string;
+  commission: number;
 };
 
 type CompanySettingsProps = {
@@ -21,6 +22,7 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
     gst: settings.gst,
     address: settings.address,
     phone: settings.phone,
+    commission: settings.commission,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +73,15 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
           id="phone"
           name="phone"
           value={formData.phone}
+          onChange={handleChange}
+        />
+      </div>
+      <div>
+        <Label htmlFor="phone">Commission</Label>
+        <Input
+          id="commission"
+          name="commission"
+          value={formData.commission}
           onChange={handleChange}
         />
       </div>

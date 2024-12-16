@@ -36,7 +36,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  console.log(settings);
 
   useEffect(() => {
     const fetchSettings = async () => {

@@ -125,8 +125,6 @@ router.get("/:id", auth, async (req, res) => {
 router.patch("/:id", auth, async (req, res) => {
   try {
     const updates = req.body;
-    console.log(updates);
-    console.log(req.params.id);
 
     const existingBill = await Bill.findOne({
       _id: req.params.id,
@@ -141,12 +139,9 @@ router.patch("/:id", auth, async (req, res) => {
       const paymentType = updates.paymentType || existingBill.paymentType;
       const netAmount = updates.netAmount || existingBill.netAmount;
 
-      // Use provided `recievedAmount` if available; otherwise, calculate
       if (typeof updates.recievedAmount === "undefined") {
         updates.recievedAmount = paymentType === "credit" ? 0 : netAmount;
       }
-
-      console.log("Calculated recievedAmount:", updates.recievedAmount); // Debugging log
     }
 
     const updatedBill = await Bill.findOneAndUpdate(

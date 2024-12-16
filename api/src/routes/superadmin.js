@@ -2,10 +2,8 @@ import Business from "../models/Business.js";
 import { Plan } from "../models/Business.js";
 import express from "express";
 
-// Manage Plans
 const router = express.Router();
 
-// Create a new plan
 router.post("/plans", async (req, res) => {
   try {
     const { name, price, features } = req.body;
@@ -20,7 +18,6 @@ router.post("/plans", async (req, res) => {
   }
 });
 
-// Read all plans
 router.get("/plans", async (req, res) => {
   try {
     const plans = await Plan.find();
@@ -31,7 +28,6 @@ router.get("/plans", async (req, res) => {
   }
 });
 
-// Update a plan
 router.put("/plans/:id", async (req, res) => {
   try {
     const { name, price, features } = req.body;
@@ -54,7 +50,6 @@ router.put("/plans/:id", async (req, res) => {
   }
 });
 
-// Delete a plan
 router.delete("/plans/:id", async (req, res) => {
   try {
     const planId = req.params.id;
@@ -72,9 +67,6 @@ router.delete("/plans/:id", async (req, res) => {
   }
 });
 
-// Manage Businesses
-
-// Update business details
 router.put("/business/:id", async (req, res) => {
   try {
     const { name, address, phone, gst, plan } = req.body;
@@ -97,5 +89,4 @@ router.put("/business/:id", async (req, res) => {
   }
 });
 
-// Export the router
 export default router;

@@ -182,12 +182,10 @@ export default function Register() {
     signature?: string;
   }) => {
     try {
-      console.log("Starting registration flow");
 
       // First, create an order
       const orderResponse = await createOrder(userData.planId);
       const { id: orderId, amount } = orderResponse.data;
-      console.log("Order created successfully:", orderResponse);
 
       // Initialize Razorpay payment
       const options = {
@@ -199,7 +197,6 @@ export default function Register() {
         order_id: orderId,
         handler: async (response: RazorpayResponse) => {
           try {
-            console.log("Payment handler triggered");
 
             // Verify the payment
             await verifyPayment({
@@ -207,7 +204,6 @@ export default function Register() {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
             });
-            console.log("Payment verified successfully");
 
             // If payment is verified, proceed with registration
             const registrationData = {
@@ -216,13 +212,11 @@ export default function Register() {
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
             };
-            console.log("Registration data prepared:", registrationData);
 
             const registrationResponse = await api.post(
               "/auth/register",
               registrationData
             );
-            console.log("Registration response:", registrationResponse);
 
             // Handle login after successful registration
             login(registrationResponse.data.token);

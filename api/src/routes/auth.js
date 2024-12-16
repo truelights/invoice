@@ -15,24 +15,18 @@ const razorpay = new Razorpay({
 
 cron.schedule("0 0 * * *", async () => {
   try {
-    console.log("Running cron job to check for expired plans...");
-
     const now = new Date();
 
-    // Find businesses with expired plans
     const expiredBusinesses = await Business.find({
       planExpiry: { $lt: now },
     });
 
     for (const business of expiredBusinesses) {
-      business.plan = null; // Remove the plan
-      business.planExpiry = null; // Clear the expiry date
-      business.verified = false; // Reset verified status
+      business.plan = null;
+      business.planExpiry = null;
+      business.verified = false;
       await business.save();
-      console.log(`Updated business: ${business.name}`);
     }
-
-    console.log("Cron job completed successfully.");
   } catch (error) {
     console.error("Error in cron job for expired plans:", error.message);
   }
@@ -41,36 +35,30 @@ router.post("/renew-plan", async (req, res) => {
   try {
     const { businessId, planId, paymentId } = req.body;
 
-    // Check if plan exists
     const plan = await Plan.findById(planId);
     if (!plan) {
       return res.status(400).json({ message: "Invalid plan selected" });
     }
 
-    // Check if business exists
     const business = await Business.findById(businessId);
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
     }
 
-    // Verify payment with Razorpay
     const payment = await razorpay.payments.fetch(paymentId);
 
     if (!payment || payment.status !== "captured") {
       return res.status(400).json({ message: "Payment verification failed" });
     }
 
-    // Validate payment amount matches the plan price
     if (payment.amount !== plan.price * 100) {
-      // Razorpay stores amount in paise
       return res
         .status(400)
         .json({ message: "Payment amount does not match plan price" });
     }
 
-    // Update business plan and expiry
     business.plan = planId;
-    business.planExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+    business.planExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     business.verified = true;
 
     await business.save();
@@ -94,7 +82,6 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       paymentId,
     } = req.body;
 
-    // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
@@ -102,13 +89,11 @@ router.post("/register", upload.single("logo"), async (req, res) => {
 
     let logoUrl = null;
 
-    // Upload logo to Cloudinary if file exists
     if (req.file) {
       const uploadResult = await uploadOnCloudinary(req.file.path);
       logoUrl = uploadResult.secure_url;
     }
 
-    // Verify payment if planId and paymentId are provided
     if (planId && paymentId) {
       const payment = await razorpay.payments.fetch(paymentId);
       if (payment.status !== "captured") {
@@ -116,16 +101,14 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       }
     }
 
-    // Get the selected plan
     const plan = planId ? await Plan.findById(planId) : null;
 
-    // Create new business
     const business = new Business({
       name: businessName || "sample",
       gst: gst || "GST000000",
       address: address || "Sample Address",
       phone: phone || "000-000-0000",
-      logo: logoUrl, // Use the logo URL if available
+      logo: logoUrl,
       expenseLabels: ["Sample Expense"],
       products: [{ name: "Sample Product", price: 100 }],
       customers: [
@@ -147,12 +130,11 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       lastReceiptDate: new Date().toISOString().split("T")[0],
       lastInvoiceNumber: 1,
       plan: plan ? plan._id : null,
-      planExpiry: plan ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null, // 30 days from now for paid plans
+      planExpiry: plan ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
     });
 
     await business.save();
 
-    // Create new user
     user = new User({
       email,
       password,
@@ -160,7 +142,6 @@ router.post("/register", upload.single("logo"), async (req, res) => {
     });
     await user.save();
 
-    // Create and return JWT token
     const payload = {
       user: {
         id: user.id,
@@ -187,25 +168,17 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      console.log(`User not found for email: ${email}`);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Log the hashed password stored in the database
-    console.log(`Stored hashed password: ${user.password}`);
-
-    // Use comparePassword method for checking password
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      console.log(`Password mismatch for email: ${email}`);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // If password matches, create and return JWT token
     const payload = {
       user: {
         id: user.id,

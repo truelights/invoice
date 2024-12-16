@@ -89,9 +89,7 @@ export default function SalesBill() {
   const [billDate, setBillDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  const initialCommission = settings?.commission;
   const [Commission, setCommission] = useState<number>(0);
-  console.log(initialCommission, Commission);
 
   useEffect(() => {
     if (settings) {
@@ -189,15 +187,8 @@ export default function SalesBill() {
   };
 
   const generatePrintContent = async () => {
-    console.log("Settings in generatePrintContent:", settings);
-    const {
-      totalAmount,
-      totalExpenses,
-      netAmount,
-      totalOtherCharges,
-      totalCommission,
-    } = calculateTotals();
-    console.log(totalCommission);
+    const { totalAmount, totalExpenses, netAmount, totalOtherCharges } =
+      calculateTotals();
 
     let logoDataUrl = "";
     if (settings?.logo) {
@@ -380,8 +371,7 @@ export default function SalesBill() {
     };
 
     try {
-      const response = await createBill(billData);
-      console.log("Bill saved:", response.data);
+      await createBill(billData);
 
       setReceiptNo("");
       setInvoiceNo("");

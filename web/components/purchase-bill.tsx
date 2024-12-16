@@ -97,7 +97,6 @@ export default function PurchaseBill() {
   const [billDate, setBillDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  console.log(settings);
 
   useEffect(() => {
     if (settings) {
@@ -151,7 +150,6 @@ export default function PurchaseBill() {
           newItems[index].bags * newItems[index].ratePerBag;
       }
 
-      console.log("Updated items in updateItem:", newItems);
       return newItems;
     });
   };
