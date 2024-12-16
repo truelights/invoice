@@ -30,7 +30,11 @@ import {
   Product,
 } from "@/types/bill";
 import { useSettings } from "@/hooks/useSettings";
-import { getNewBillNumbers, createBill } from "@/utils/api";
+import {
+  getNewBillNumbers,
+  createBill,
+  fetchBillByReceiptNo,
+} from "@/utils/api";
 
 interface Settings {
   name: string;
@@ -338,10 +342,31 @@ export default function SalesBill() {
     try {
       const response = await getNewBillNumbers();
       const data = response.data as BillNumbers;
-      setReceiptNo(data.receiptNo);
       setInvoiceNo(data.invoiceNo);
     } catch (error) {
       console.error("Error fetching new bill numbers:", error);
+    }
+  };
+
+  const fetchBillDetails = async (receiptNo: string) => {
+    try {
+      const response = await fetchBillByReceiptNo(receiptNo);
+      console.log(response);
+
+      if (response) {
+        setInvoiceNo(response.data.invoiceNo);
+        setCustomerDetails(response.data.customerDetails);
+        setItems(response.data.items);
+        setExpenses(response.data.expenses);
+        setBillDate(new Date(response.data.date).toISOString().split("T")[0]);
+        setPaymentType(response.data.paymentType);
+        setCommission(response.data.totalCommission);
+      }
+    } catch (error) {
+      console.error("Error fetching bill details:", error);
+      alert(
+        "Failed to fetch bill details. Please check the receipt number and try again."
+      );
     }
   };
 
@@ -449,13 +474,14 @@ export default function SalesBill() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             value={receiptNo}
-            readOnly
+            onChange={(e) => setReceiptNo(e.target.value)}
             placeholder="Receipt No"
             className="print:border-none"
           />
+          <Button onClick={() => fetchBillDetails(receiptNo)}>Fetch</Button>
           <Input
             value={invoiceNo}
             readOnly

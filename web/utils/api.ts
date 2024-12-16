@@ -7,6 +7,8 @@ const api = axios.create({
 });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  console.log(token);
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
@@ -24,6 +26,8 @@ export const createOrder = (planId: string) =>
 export const verifyPayment = (paymentData: any) =>
   api.post("/payments/verify-payment", paymentData);
 
+export const fetchBillByReceiptNo = async (receiptNo: string) =>
+  api.get(`/bills/batch/${receiptNo}`);
 export const register = async (userData: {
   email: string;
   password: string;
