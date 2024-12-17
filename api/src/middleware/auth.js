@@ -1,11 +1,12 @@
 import jwt from "jsonwebtoken";
+import Business from "../models/Business.js";
+import { Admin } from "../models/Admin.js";
 
 export const auth = (req, res, next) => {
   try {
     const token = req.header("Authorization").replace("Bearer ", "");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Correctly attach userId and businessId to the request object
     req.userId = decoded.user.id;
     req.businessId = decoded.user.businessId;
 
@@ -15,5 +16,46 @@ export const auth = (req, res, next) => {
     next();
   } catch (error) {
     res.status(401).send({ error: "Please authenticate." });
+  }
+};
+
+export const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authentication token is required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const admin = await Admin.findById(decoded.id);
+    if (admin) {
+      req.user = admin;
+      req.isAdmin = true;
+      return next();
+    }
+
+    const business = await Business.findById(decoded.id);
+    if (business) {
+      req.user = business;
+      req.isAdmin = false;
+      return next();
+    }
+
+    return res.status(404).json({ message: "User not found" });
+  } catch (error) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
+export const isAdmin = (req, res, next) => {
+  if (req.isAdmin) {
+    next();
+  } else {
+    res.status(403).json({ message: "Access denied. Admin rights required." });
   }
 };

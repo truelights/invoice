@@ -7,6 +7,8 @@ import billRoutes from "./routes/bills.js";
 import settingsRoutes from "./routes/settings.js";
 import paymentRoutes from "./routes/payments.js";
 import admin from "./routes/superadmin.js";
+import businessRoutes from "./routes/businessRoutes.js";
+import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -34,6 +36,7 @@ app.use("/api/bills", billRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", admin);
-
+app.use("/api/business", businessRoutes);
+app.use("/api/adminauth", adminAuthRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

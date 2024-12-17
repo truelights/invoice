@@ -7,12 +7,11 @@ const api = axios.create({
 });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  console.log(token);
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
-    window.location.replace("/auth/login");
+    // window.location.replace("/auth/login");
   }
   return config;
 });
@@ -41,14 +40,9 @@ export const register = async (userData: {
   signature?: string;
 }) => {
   try {
-    console.log("Starting registration flow");
-
-    // First, create an order
     const orderResponse = await createOrder(userData.planId);
     const { id: orderId, amount } = orderResponse.data;
-    console.log("Order created successfully:", orderResponse);
 
-    // Initialize Razorpay payment
     const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: amount,
@@ -58,30 +52,23 @@ export const register = async (userData: {
       order_id: orderId,
       handler: async (response: any) => {
         try {
-          console.log("Payment handler triggered");
-
-          // Verify the payment
           await verifyPayment({
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_order_id: response.razorpay_order_id,
             razorpay_signature: response.razorpay_signature,
           });
-          console.log("Payment verified successfully");
 
-          // If payment is verified, proceed with registration
           const registrationData = {
             ...userData,
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
             signature: response.razorpay_signature,
           };
-          console.log("Registration data prepared:", registrationData);
 
           const registrationResponse = await api.post(
             "/auth/register",
             registrationData
           );
-          console.log("Registration response:", registrationResponse);
           return registrationResponse.data;
         } catch (error) {
           console.error("Error during payment verification:", error);
@@ -104,13 +91,12 @@ export const register = async (userData: {
       });
 
       paymentObject.on("payment.success", (response: any) => {
-        console.log("Payment successful:", response);
         resolve(response);
       });
     });
   } catch (error) {
     console.error("Error in registration flow:", error);
-    throw error; // Re-throw the error for further handling
+    throw error;
   }
 };
 

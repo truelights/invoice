@@ -351,7 +351,6 @@ export default function SalesBill() {
   const fetchBillDetails = async (receiptNo: string) => {
     try {
       const response = await fetchBillByReceiptNo(receiptNo);
-      console.log(response);
 
       if (response) {
         setInvoiceNo(response.data.invoiceNo);
