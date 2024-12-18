@@ -59,3 +59,22 @@ export const isAdmin = (req, res, next) => {
     res.status(403).json({ message: "Access denied. Admin rights required." });
   }
 };
+
+export const checkPlanExpiry = async (req, res, next) => {
+  try {
+    const business = await Business.findById(req.businessId);
+    if (
+      !business ||
+      !business.plan ||
+      new Date() > new Date(business.planExpiry)
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Plan expired. Please renew to continue." });
+    }
+    next();
+  } catch (error) {
+    console.error("Error in plan expiry middleware:", error.message);
+    res.status(500).send("Server error");
+  }
+};

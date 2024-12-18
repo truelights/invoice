@@ -102,6 +102,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { login } = useAuth();
+  console.log(plans);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -182,7 +183,6 @@ export default function Register() {
     signature?: string;
   }) => {
     try {
-
       // First, create an order
       const orderResponse = await createOrder(userData.planId);
       const { id: orderId, amount } = orderResponse.data;
@@ -197,7 +197,6 @@ export default function Register() {
         order_id: orderId,
         handler: async (response: RazorpayResponse) => {
           try {
-
             // Verify the payment
             await verifyPayment({
               razorpay_payment_id: response.razorpay_payment_id,

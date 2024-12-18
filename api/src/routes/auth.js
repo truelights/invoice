@@ -31,6 +31,7 @@ cron.schedule("0 0 * * *", async () => {
     console.error("Error in cron job for expired plans:", error.message);
   }
 });
+
 router.post("/renew-plan", async (req, res) => {
   try {
     const { businessId, planId, paymentId } = req.body;
@@ -57,18 +58,29 @@ router.post("/renew-plan", async (req, res) => {
         .json({ message: "Payment amount does not match plan price" });
     }
 
+    const transaction = new Transaction({
+      business: business._id,
+      plan: plan._id,
+      amount: plan.price,
+      paymentMethod: payment.method || "Unknown",
+      status: "Completed",
+    });
+
+    await transaction.save();
+
     business.plan = planId;
     business.planExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     business.verified = true;
 
     await business.save();
 
-    res.json({ message: "Plan renewed successfully", business });
+    res.json({ message: "Plan renewed successfully", business, transaction });
   } catch (error) {
     console.error("Error renewing plan:", error.message);
     res.status(500).send("Server error");
   }
 });
+
 router.post("/register", upload.single("logo"), async (req, res) => {
   try {
     const {
@@ -94,11 +106,28 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       logoUrl = uploadResult.secure_url;
     }
 
+    let transaction = null;
+
     if (planId && paymentId) {
       const payment = await razorpay.payments.fetch(paymentId);
       if (payment.status !== "captured") {
         return res.status(400).json({ message: "Payment not successful" });
       }
+
+      const plan = await Plan.findById(planId);
+      if (!plan) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      transaction = new Transaction({
+        amount: plan.price,
+        paymentMethod: payment.method || "Unknown",
+        business: null, // Temporary, will be updated after business creation
+        plan: planId,
+        status: "Completed",
+      });
+
+      await transaction.save();
     }
 
     const plan = planId ? await Plan.findById(planId) : null;
@@ -135,6 +164,11 @@ router.post("/register", upload.single("logo"), async (req, res) => {
 
     await business.save();
 
+    if (transaction) {
+      transaction.business = business._id;
+      await transaction.save();
+    }
+
     user = new User({
       email,
       password,
@@ -155,7 +189,7 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       { expiresIn: "1h" },
       (err, token) => {
         if (err) throw err;
-        res.json({ token });
+        res.json({ token, transaction });
       }
     );
   } catch (err) {
@@ -177,6 +211,18 @@ router.post("/login", async (req, res) => {
 
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const business = await Business.findById(user.businessId);
+    if (
+      !business ||
+      !business.plan ||
+      !business.planExpiry ||
+      new Date() > new Date(business.planExpiry)
+    ) {
+      return res.status(403).json({
+        message: "Plan expired or not active. Please renew to continue.",
+      });
     }
 
     const payload = {

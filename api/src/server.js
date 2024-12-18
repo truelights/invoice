@@ -14,7 +14,11 @@ dotenv.config();
 const app = express();
 
 const corsOptions = {
-  origin: ["https://invoice-nine-omega.vercel.app", "http://localhost:3000"],
+  origin: [
+    "https://invoice-nine-omega.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

@@ -13,18 +13,15 @@ import { authenticateToken, isAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Business routes
-router.get("/", authenticateToken, getBusinessInfo);
-router.put("/", authenticateToken, updateBusinessInfo);
-router.post("/change-plan", authenticateToken, changePlan);
+router.get("/", authenticateToken, isAdmin, getBusinessInfo);
+router.put("/:_id", authenticateToken, isAdmin, updateBusinessInfo);
+router.post("/change-plan", authenticateToken, isAdmin, changePlan);
 
-// Plan routes
 router.post("/plans", authenticateToken, isAdmin, createPlan);
 router.get("/plans", authenticateToken, getAllPlans);
 router.put("/plans/:id", authenticateToken, isAdmin, updatePlan);
 router.delete("/plans/:id", authenticateToken, isAdmin, deletePlan);
 
-// Analytics routes
 router.get("/analytics", authenticateToken, isAdmin, countAnalytics);
 
 export default router;

@@ -343,9 +343,23 @@ export default function PurchaseBill() {
   }
 
   if (error) {
-    return <p>Error loading settings: {error.message}</p>;
-  }
+    if (error instanceof Error) {
+      return <p>{error.message}</p>;
+    }
 
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+      };
+      return (
+        <p>
+          {axiosError.response?.data?.message || "An unknown error occurred"}
+        </p>
+      );
+    }
+
+    return <p>An unknown error occurred</p>;
+  }
   if (!settings) {
     return <p>No settings available</p>;
   }

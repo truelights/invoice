@@ -1,12 +1,12 @@
 import express from "express";
-import { auth } from "../middleware/auth.js";
+import { auth, checkPlanExpiry } from "../middleware/auth.js";
 import Bill from "../models/Bill.js";
 import Business from "../models/Business.js";
 import Transaction from "../models/Transactions.js";
 
 const router = express.Router();
 
-router.get("/new-numbers", auth, async (req, res) => {
+router.get("/new-numbers", auth, checkPlanExpiry, async (req, res) => {
   try {
     const business = await Business.findById(req.businessId);
 
@@ -36,7 +36,7 @@ router.get("/new-numbers", auth, async (req, res) => {
   }
 });
 
-router.get("/transactions", auth, async (req, res) => {
+router.get("/transactions", auth, checkPlanExpiry, async (req, res) => {
   try {
     const transactions = await Transaction.find({
       businessId: req.businessId,
@@ -47,7 +47,7 @@ router.get("/transactions", auth, async (req, res) => {
   }
 });
 
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, checkPlanExpiry, async (req, res) => {
   try {
     const { paymentType, netAmount, ...otherDetails } = req.body;
     const business = await Business.findById(req.businessId);
@@ -98,7 +98,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, checkPlanExpiry, async (req, res) => {
   try {
     const bills = await Bill.find({ businessId: req.businessId });
     res.send(bills);
@@ -107,7 +107,7 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-router.get("/:id", auth, async (req, res) => {
+router.get("/:id", auth, checkPlanExpiry, async (req, res) => {
   try {
     const bill = await Bill.findOne({
       _id: req.params.id,
@@ -121,7 +121,7 @@ router.get("/:id", auth, async (req, res) => {
     res.status(500).send(error);
   }
 });
-router.get("/batch/:batch", auth, async (req, res) => {
+router.get("/batch/:batch", auth, checkPlanExpiry, async (req, res) => {
   try {
     const bill = await Bill.findOne({
       receiptNo: req.params.batch,
@@ -136,7 +136,7 @@ router.get("/batch/:batch", auth, async (req, res) => {
   }
 });
 
-router.patch("/:id", auth, async (req, res) => {
+router.patch("/:id", auth, checkPlanExpiry, async (req, res) => {
   try {
     const updates = req.body;
 
@@ -178,7 +178,7 @@ router.patch("/:id", auth, async (req, res) => {
   }
 });
 
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, checkPlanExpiry, async (req, res) => {
   try {
     const bill = await Bill.findOneAndDelete({
       _id: req.params.id,

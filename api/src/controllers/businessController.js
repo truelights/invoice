@@ -1,7 +1,8 @@
 import Business, { Plan } from "../models/Business.js";
 
-// Business-related controllers
 export const updateBusinessInfo = async (req, res) => {
+  console.log(req.params._id);
+  console.log(req.body);
   try {
     const {
       name,
@@ -15,8 +16,9 @@ export const updateBusinessInfo = async (req, res) => {
       customers,
       vendors,
     } = req.body;
+
     const updatedBusiness = await Business.findByIdAndUpdate(
-      req.business._id,
+      req.params._id,
       {
         name,
         gst,
@@ -69,7 +71,6 @@ export const getBusinessInfo = async (req, res) => {
   }
 };
 
-// Plan-related controllers
 export const createPlan = async (req, res) => {
   try {
     const { name, price, features } = req.body;

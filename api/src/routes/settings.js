@@ -1,10 +1,10 @@
 import express from "express";
-import { auth } from "../middleware/auth.js";
+import { auth, checkPlanExpiry } from "../middleware/auth.js";
 import Business from "../models/Business.js";
 
 const router = express.Router();
 
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, checkPlanExpiry, async (req, res) => {
   try {
     const business = await Business.findById(req.businessId);
     if (!business) {
@@ -18,7 +18,7 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-router.patch("/", auth, async (req, res) => {
+router.patch("/", auth, checkPlanExpiry, async (req, res) => {
   const updates = req.body;
   try {
     const business = await Business.findByIdAndUpdate(req.businessId, updates, {

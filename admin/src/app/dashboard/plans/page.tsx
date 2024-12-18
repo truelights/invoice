@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { getAllPlans, createPlan, updatePlan, deletePlan } from '@/utils/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import { getAllPlans, createPlan, updatePlan, deletePlan } from "@/utils/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Plan {
-  _id: string;
+  id: string;
   name: string;
   price: number;
+  description: string;
   features: string[];
 }
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [newPlan, setNewPlan] = useState({ name: '', price: '', features: '' });
+  const [newPlan, setNewPlan] = useState({
+    name: "",
+    price: "",
+    description: "",
+    features: "",
+  });
 
   useEffect(() => {
     fetchPlans();
@@ -26,7 +32,7 @@ export default function PlansPage() {
       const data = await getAllPlans();
       setPlans(data);
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
+      console.error("Failed to fetch plans:", error);
     }
   };
 
@@ -37,33 +43,35 @@ export default function PlansPage() {
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const createdPlan = await createPlan({
+      const planData = {
         name: newPlan.name,
         price: parseFloat(newPlan.price),
-        features: newPlan.features.split(',').map(feature => feature.trim()),
-      });
+        description: newPlan.description,
+        features: newPlan.features.split(",").map((feature) => feature.trim()),
+      };
+      const createdPlan = await createPlan(planData);
       setPlans([...plans, createdPlan]);
-      setNewPlan({ name: '', price: '', features: '' });
+      setNewPlan({ name: "", price: "", description: "", features: "" });
     } catch (error) {
-      console.error('Failed to create plan:', error);
+      console.error("Failed to create plan:", error);
     }
   };
 
   const handleUpdatePlan = async (id: string, updatedPlan: Partial<Plan>) => {
     try {
-      const updated = await updatePlan(id, updatedPlan);
-      setPlans(plans.map(plan => plan._id === id ? updated : plan));
+      const updated = await updatePlan(id, updatedPlan as Plan);
+      setPlans(plans.map((plan) => (plan.id === id ? updated : plan)));
     } catch (error) {
-      console.error('Failed to update plan:', error);
+      console.error("Failed to update plan:", error);
     }
   };
 
   const handleDeletePlan = async (id: string) => {
     try {
       await deletePlan(id);
-      setPlans(plans.filter(plan => plan._id !== id));
+      setPlans(plans.filter((plan) => plan.id !== id));
     } catch (error) {
-      console.error('Failed to delete plan:', error);
+      console.error("Failed to delete plan:", error);
     }
   };
 
@@ -91,6 +99,13 @@ export default function PlansPage() {
               required
             />
             <Input
+              name="description"
+              value={newPlan.description}
+              onChange={handleNewPlanChange}
+              placeholder="Description"
+              required
+            />
+            <Input
               name="features"
               value={newPlan.features}
               onChange={handleNewPlanChange}
@@ -107,23 +122,57 @@ export default function PlansPage() {
           <CardTitle>Existing Plans</CardTitle>
         </CardHeader>
         <CardContent>
-          {plans.map(plan => (
-            <div key={plan._id} className="mb-4 p-4 border rounded">
+          {plans.map((plan) => (
+            <div key={plan.id} className="mb-4 p-4 border rounded">
               <h3 className="text-lg font-semibold">{plan.name}</h3>
               <p>Price: ${plan.price}</p>
+              <p>Description: {plan.description}</p>
               <ul className="list-disc pl-5">
                 {plan.features.map((feature, index) => (
                   <li key={index}>{feature}</li>
                 ))}
               </ul>
               <div className="mt-2 space-x-2">
-                <Button onClick={() => handleUpdatePlan(plan._id, { name: prompt('New name:', plan.name) || plan.name })}>
+                <Button
+                  onClick={() => {
+                    const newName = prompt("New name:", plan.name);
+                    if (newName) handleUpdatePlan(plan.id, { name: newName });
+                  }}
+                >
                   Edit Name
                 </Button>
-                <Button onClick={() => handleUpdatePlan(plan._id, { price: parseFloat(prompt('New price:', plan.price.toString()) || plan.price.toString()) })}>
+                <Button
+                  onClick={() => {
+                    const newPrice = prompt(
+                      "New price:",
+                      plan.price.toString()
+                    );
+                    if (newPrice)
+                      handleUpdatePlan(plan.id, {
+                        price: parseFloat(newPrice),
+                      });
+                  }}
+                >
                   Edit Price
                 </Button>
-                <Button onClick={() => handleDeletePlan(plan._id)} variant="destructive">
+                <Button
+                  onClick={() => {
+                    const newDescription = prompt(
+                      "New description:",
+                      plan.description
+                    );
+                    if (newDescription)
+                      handleUpdatePlan(plan.id, {
+                        description: newDescription,
+                      });
+                  }}
+                >
+                  Edit Description
+                </Button>
+                <Button
+                  onClick={() => handleDeletePlan(plan.id)}
+                  variant="destructive"
+                >
                   Delete
                 </Button>
               </div>
@@ -134,4 +183,3 @@ export default function PlansPage() {
     </div>
   );
 }
-
