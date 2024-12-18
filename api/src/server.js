@@ -18,6 +18,7 @@ const corsOptions = {
     "https://invoice-nine-omega.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
+    "https://dashboard-invoice-chi.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
