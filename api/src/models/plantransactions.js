@@ -1,7 +1,7 @@
 // Transaction Schema for plan purchase records
 import mongoose from "mongoose";
 
-const transactionSchema = new mongoose.Schema({
+const Plantransactions = new mongoose.Schema({
   business: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Business",
@@ -37,11 +37,11 @@ const transactionSchema = new mongoose.Schema({
 });
 
 // Pre-save middleware to generate unique receipt ID
-transactionSchema.pre("save", function (next) {
+Plantransactions.pre("save", function (next) {
   if (!this.receiptId) {
     this.receiptId = `TXN-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   }
   next();
 });
 
-export default mongoose.model("Transaction", transactionSchema);
+export default mongoose.model("PlanTransaction", Plantransactions);

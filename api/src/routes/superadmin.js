@@ -1,5 +1,6 @@
 import Business from "../models/Business.js";
 import { Plan } from "../models/Business.js";
+import Plantransactions from "../models/plantransactions.js";
 import express from "express";
 
 const router = express.Router();
@@ -89,4 +90,101 @@ router.put("/business/:id", async (req, res) => {
   }
 });
 
+router.post("/business/:id/subscribe", async (req, res) => {
+  try {
+    const businessId = req.params.id;
+    const { planId, amount, paymentMethod } = req.body;
+
+    // Validate the business and plan existence
+    const business = await Business.findById(businessId);
+    if (!business) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ message: "Plan not found" });
+    }
+
+    // Create the transaction record
+    const transaction = new Plantransactions({
+      business: business._id,
+      plan: plan._id,
+      amount: amount,
+      paymentMethod: paymentMethod,
+      status: "Pending", // Default status, you can update later
+    });
+
+    await transaction.save();
+
+    res.status(201).json(transaction);
+  } catch (error) {
+    console.error("Error processing transaction:", error.message);
+    res.status(500).send("Server error");
+  }
+});
+
+router.put("/transaction/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const transactionId = req.params.id;
+
+    // Validate status
+    if (!["Pending", "Completed", "Failed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const transaction = await Plantransactions.findById(transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    transaction.status = status;
+    await transaction.save();
+
+    res.json(transaction);
+  } catch (error) {
+    console.error("Error updating transaction status:", error.message);
+    res.status(500).send("Server error");
+  }
+});
+
+router.get("/transaction/:id", async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+
+    const transaction = await Plantransactions.findById(transactionId)
+      .populate("business", "name address") // Select business details
+      .populate("plan", "name price features"); // Select plan details
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    res.json(transaction);
+  } catch (error) {
+    console.error("Error fetching transaction:", error.message);
+    res.status(500).send("Server error");
+  }
+});
+router.get("/business/:id/transactions", async (req, res) => {
+  try {
+    const businessId = req.params.id;
+
+    const transactions = await Plantransactions.find({
+      business: businessId,
+    }).populate("plan", "name price");
+
+    if (!transactions) {
+      return res
+        .status(404)
+        .json({ message: "No transactions found for this business" });
+    }
+
+    res.json(transactions);
+  } catch (error) {
+    console.error("Error fetching transactions:", error.message);
+    res.status(500).send("Server error");
+  }
+});
 export default router;

@@ -7,6 +7,7 @@ import {
   getPlans,
   changePlan,
 } from "@/utils/api";
+import { Plan, Business } from "@/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,111 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Plan {
-  _id: string;
-  id: string;
-  name: string;
-  price: number;
-  features: string[];
-  createdAt: string;
-  description: string; // Ensure this is always a string
-}
-
-interface PlanData {
-  _id?: string;
-  id?: string;
-  name?: string;
-  price?: number;
-  features?: string[];
-  createdAt?: string;
-  description?: string;
-}
-
-interface Business {
-  _id: string;
-  name: string;
-  gst: string;
-  address: string;
-  phone: string;
-  logo: string | null;
-  expenseLabels: string[];
-  commission: number;
-  plan: string;
-  planExpiry: string;
-  verified: boolean;
-  products: Array<{ name: string; price: number; _id: string }>;
-  customers: Array<{
-    name: string;
-    address: string;
-    phone: string;
-    _id: string;
-  }>;
-  vendors: Array<{
-    name: string;
-    address: string;
-    phone: string;
-    _id: string;
-  }>;
-  lastReceiptNumber: number;
-  lastReceiptDate: string;
-  lastInvoiceNumber: number;
-}
-
-interface Business {
-  _id: string;
-  name: string;
-  gst: string;
-  address: string;
-  phone: string;
-  logo: string | null;
-  expenseLabels: string[];
-  commission: number;
-  plan: string;
-  planExpiry: string;
-  verified: boolean;
-  products: Array<{ name: string; price: number; _id: string }>;
-  customers: Array<{
-    name: string;
-    address: string;
-    phone: string;
-    _id: string;
-  }>;
-  vendors: Array<{ name: string; address: string; phone: string; _id: string }>;
-  lastReceiptNumber: number;
-  lastReceiptDate: string;
-  lastInvoiceNumber: number;
-}
-
-interface BusinessInfo {
-  _id?: string;
-  name?: string;
-  gst?: string;
-  address?: string;
-  phone?: string;
-  logo?: string | null;
-  expenseLabels?: string[];
-  commission?: number;
-  plan?: string;
-  planExpiry?: string;
-  verified?: boolean;
-  products?: Array<{ name: string; price: number; _id: string }>;
-  customers?: Array<{
-    name: string;
-    address: string;
-    phone: string;
-    _id: string;
-  }>;
-  vendors?: Array<{
-    name: string;
-    address: string;
-    phone: string;
-    _id: string;
-  }>;
-  lastReceiptNumber?: number;
-  lastReceiptDate?: string;
-  lastInvoiceNumber?: number;
-}
 
 export default function BusinessInfoPage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -139,17 +35,15 @@ export default function BusinessInfoPage() {
         const plansData = await getPlans();
 
         setBusinesses(
-          Array.isArray(businessData)
-            ? businessData.map(convertToBusinessType)
-            : [convertToBusinessType(businessData)]
+          Array.isArray(businessData) ? businessData : [businessData]
         );
-        setPlans(plansData.map(convertToPlanType));
+        setPlans(plansData);
         if (businessData) {
           const firstBusiness = Array.isArray(businessData)
             ? businessData[0]
             : businessData;
           setSelectedBusinessId(firstBusiness._id);
-          setEditedBusiness(convertToBusinessType(firstBusiness));
+          setEditedBusiness(firstBusiness);
           setSelectedPlan(firstBusiness.plan);
         }
       } catch (error) {
@@ -158,43 +52,6 @@ export default function BusinessInfoPage() {
     };
     fetchData();
   }, []);
-
-  const convertToBusinessType = (data: BusinessInfo): Business => {
-    if (!data._id) {
-      throw new Error("BusinessInfo is missing required _id property.");
-    }
-    return {
-      _id: data._id,
-      name: data.name || "",
-      gst: data.gst || "",
-      address: data.address || "",
-      phone: data.phone || "",
-      logo: data.logo || null,
-      expenseLabels: data.expenseLabels || [],
-      commission: data.commission || 0,
-      plan: data.plan || "",
-      planExpiry: data.planExpiry || "",
-      verified: data.verified || false,
-      products: data.products || [],
-      customers: data.customers || [],
-      vendors: data.vendors || [],
-      lastReceiptNumber: data.lastReceiptNumber || 0,
-      lastReceiptDate: data.lastReceiptDate || "",
-      lastInvoiceNumber: data.lastInvoiceNumber || 0,
-    };
-  };
-
-  const convertToPlanType = (data: PlanData): Plan => {
-    return {
-      _id: data._id || "",
-      id: data.id || data._id || "",
-      name: data.name || "",
-      price: data.price || 0,
-      features: data.features || [],
-      createdAt: data.createdAt || "",
-      description: data.description || "",
-    };
-  };
 
   const handleBusinessSelect = (businessId: string) => {
     setSelectedBusinessId(businessId);
@@ -207,7 +64,11 @@ export default function BusinessInfoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (editedBusiness) {
-      setEditedBusiness({ ...editedBusiness, [e.target.name]: e.target.value });
+      const { name, value } = e.target;
+      setEditedBusiness({
+        ...editedBusiness,
+        [name]: name === "commission" ? parseFloat(value) : value,
+      });
     }
   };
 
@@ -219,9 +80,8 @@ export default function BusinessInfoPage() {
           editedBusiness,
           editedBusiness._id
         );
+        setEditedBusiness(updatedBusiness);
         alert("Business information updated successfully!");
-
-        setEditedBusiness(convertToBusinessType(updatedBusiness));
       } catch (error) {
         console.error("Failed to update business info:", error);
         alert("Failed to update business information. Please try again.");
@@ -231,7 +91,7 @@ export default function BusinessInfoPage() {
 
   const handlePlanChange = async (planId: string) => {
     if (editedBusiness && selectedBusinessId) {
-      const newPlan = plans.find((p) => p._id === planId);
+      const newPlan = plans.find((p) => p.id === planId);
       if (newPlan) {
         try {
           await changePlan(selectedBusinessId, newPlan);
@@ -247,7 +107,11 @@ export default function BusinessInfoPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 space-y-6">
+      <h1 className="text-3xl font-bold mb-6">
+        Business Information Management
+      </h1>
+
       <Card>
         <CardHeader>
           <CardTitle>Select Business</CardTitle>
@@ -257,7 +121,7 @@ export default function BusinessInfoPage() {
             onValueChange={handleBusinessSelect}
             value={selectedBusinessId || undefined}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a business" />
             </SelectTrigger>
             <SelectContent>
@@ -288,7 +152,7 @@ export default function BusinessInfoPage() {
                 <Input
                   id="name"
                   name="name"
-                  value={editedBusiness.name}
+                  value={editedBusiness.name || ""}
                   onChange={handleChange}
                   required
                 />
@@ -303,7 +167,7 @@ export default function BusinessInfoPage() {
                 <Input
                   id="gst"
                   name="gst"
-                  value={editedBusiness.gst}
+                  value={editedBusiness.gst || ""}
                   onChange={handleChange}
                   required
                 />
@@ -318,7 +182,7 @@ export default function BusinessInfoPage() {
                 <Input
                   id="address"
                   name="address"
-                  value={editedBusiness.address}
+                  value={editedBusiness.address || ""}
                   onChange={handleChange}
                   required
                 />
@@ -333,7 +197,7 @@ export default function BusinessInfoPage() {
                 <Input
                   id="phone"
                   name="phone"
-                  value={editedBusiness.phone}
+                  value={editedBusiness.phone || ""}
                   onChange={handleChange}
                   required
                 />
@@ -349,7 +213,7 @@ export default function BusinessInfoPage() {
                   id="commission"
                   name="commission"
                   type="number"
-                  value={editedBusiness.commission.toString()}
+                  value={(editedBusiness.commission || 0).toString()}
                   onChange={handleChange}
                   required
                 />
@@ -370,12 +234,12 @@ export default function BusinessInfoPage() {
               onValueChange={handlePlanChange}
               value={selectedPlan || undefined}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a plan" />
               </SelectTrigger>
               <SelectContent>
                 {plans.map((plan) => (
-                  <SelectItem key={plan._id} value={plan._id}>
+                  <SelectItem key={plan.id} value={plan.id}>
                     {plan.name} - ₹{plan.price}
                   </SelectItem>
                 ))}
@@ -386,7 +250,7 @@ export default function BusinessInfoPage() {
       )}
 
       {editedBusiness && (
-        <div className="mt-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Products</CardTitle>

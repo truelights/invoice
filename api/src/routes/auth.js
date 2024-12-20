@@ -6,7 +6,7 @@ import { upload } from "../middleware/multer.middleware.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Razorpay from "razorpay";
 import cron from "node-cron";
-
+import Plantransactions from "../models/plantransactions.js";
 const router = express.Router();
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -58,7 +58,7 @@ router.post("/renew-plan", async (req, res) => {
         .json({ message: "Payment amount does not match plan price" });
     }
 
-    const transaction = new Transaction({
+    const transaction = new Plantransactions({
       business: business._id,
       plan: plan._id,
       amount: plan.price,
@@ -69,7 +69,9 @@ router.post("/renew-plan", async (req, res) => {
     await transaction.save();
 
     business.plan = planId;
-    business.planExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    business.planExpiry = new Date(
+      Date.now() + plan.duration * 24 * 60 * 60 * 1000
+    );
     business.verified = true;
 
     await business.save();
@@ -119,7 +121,7 @@ router.post("/register", upload.single("logo"), async (req, res) => {
         return res.status(400).json({ message: "Invalid plan selected" });
       }
 
-      transaction = new Transaction({
+      transaction = new Plantransactions({
         amount: plan.price,
         paymentMethod: payment.method || "Unknown",
         business: null, // Temporary, will be updated after business creation
@@ -159,7 +161,9 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       lastReceiptDate: new Date().toISOString().split("T")[0],
       lastInvoiceNumber: 1,
       plan: plan ? plan._id : null,
-      planExpiry: plan ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
+      planExpiry: plan
+        ? new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000)
+        : null,
     });
 
     await business.save();

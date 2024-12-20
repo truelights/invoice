@@ -1,10 +1,10 @@
-// Updated Business and Plan Schemas
 import mongoose from "mongoose";
 
 const planSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   price: { type: Number, required: true },
   features: [{ type: String }],
+  duration: { type: Number, required: true }, // Added duration field
   createdAt: { type: Date, default: Date.now },
 });
 

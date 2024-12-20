@@ -13,7 +13,30 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
+export interface Business {
+  _id: string;
+  name: string;
+  gst: string;
+  address: string;
+  phone: string;
+  logo: string | null;
+  expenseLabels: string[];
+  commission: number;
+  plan: string;
+  planExpiry: string;
+  verified: boolean;
+  products: Array<{ name: string; price: number; _id: string }>;
+  customers: Array<{
+    name: string;
+    address: string;
+    phone: string;
+    _id: string;
+  }>;
+  vendors: Array<{ name: string; address: string; phone: string; _id: string }>;
+  lastReceiptNumber: number;
+  lastReceiptDate: string;
+  lastInvoiceNumber: number;
+}
 interface LoginResponse {
   token: string;
   user: {
@@ -40,6 +63,7 @@ export interface Plan {
   price: number;
   description: string;
   features: string[];
+  duration: number;
 }
 
 export const getPlans = async (): Promise<Plan[]> => {
@@ -58,21 +82,9 @@ export const register = async (
   return response.data;
 };
 
-interface BusinessInfo {
-  id: string;
-  name: string;
-  address: string;
-  owner: string;
-}
-
-export const getBusinessInfo = async (): Promise<BusinessInfo> => {
-  try {
-    const response = await api.get<BusinessInfo>("/business");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching business info:", error);
-    throw error;
-  }
+export const getBusinessInfo = async (): Promise<Business | Business[]> => {
+  const response = await axios.get(`${API_URL}/business`);
+  return response.data;
 };
 
 interface AnalyticsData {
@@ -86,17 +98,11 @@ export const Analytics = async (): Promise<AnalyticsData> => {
   return response.data;
 };
 
-interface UpdateBusinessInfoData {
-  name?: string;
-  address?: string;
-  owner?: string;
-}
-
 export const updateBusinessInfo = async (
-  data: UpdateBusinessInfoData,
-  _id: string
-): Promise<BusinessInfo> => {
-  const response = await api.put<BusinessInfo>(`/business/${_id}`, data);
+  business: Business,
+  id: string
+): Promise<Business> => {
+  const response = await axios.put(`${API_URL}/business/${id}`, business);
   return response.data;
 };
 

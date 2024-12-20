@@ -47,12 +47,12 @@ export const changePlan = async (req, res) => {
       return res.status(404).json({ message: "Plan not found" });
     }
 
-    const oneMonthFromNow = new Date();
-    oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
     const updatedBusiness = await Business.findByIdAndUpdate(
       req.business._id,
-      { plan: planId, planExpiry: oneMonthFromNow },
+      {
+        plan: planId,
+        planExpiry: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
+      },
       { new: true }
     );
 
@@ -73,8 +73,8 @@ export const getBusinessInfo = async (req, res) => {
 
 export const createPlan = async (req, res) => {
   try {
-    const { name, price, features } = req.body;
-    const newPlan = new Plan({ name, price, features });
+    const { name, price, features, duration } = req.body; // Added duration to request body
+    const newPlan = new Plan({ name, price, features, duration }); // Added duration to newPlan
     await newPlan.save();
     res.status(201).json(newPlan);
   } catch (error) {
@@ -94,10 +94,10 @@ export const getAllPlans = async (req, res) => {
 export const updatePlan = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, features } = req.body;
+    const { name, price, features, duration } = req.body; // Added duration to request body
     const updatedPlan = await Plan.findByIdAndUpdate(
       id,
-      { name, price, features },
+      { name, price, features, duration }, // Added duration to update
       { new: true }
     );
     if (!updatedPlan) {
