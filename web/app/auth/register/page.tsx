@@ -102,7 +102,6 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { login } = useAuth();
-  console.log(plans);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -184,65 +183,72 @@ export default function Register() {
   }) => {
     try {
       // First, create an order
-      const orderResponse = await createOrder(userData.planId);
-      const { id: orderId, amount } = orderResponse.data;
+      const selectedPlan = plans.find((plan) => plan._id === userData.planId);
 
-      // Initialize Razorpay payment
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount,
-        currency: "INR",
-        name: "Invoice App",
-        description: "Plan Subscription",
-        order_id: orderId,
-        handler: async (response: RazorpayResponse) => {
-          try {
-            // Verify the payment
-            await verifyPayment({
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-            });
+      if (!selectedPlan) {
+        throw new Error("Selected plan not found");
+      }
 
-            // If payment is verified, proceed with registration
-            const registrationData = {
-              ...userData,
-              paymentId: response.razorpay_payment_id,
-              orderId: response.razorpay_order_id,
-              signature: response.razorpay_signature,
-            };
+      if (selectedPlan.price === 0) {
+        // For free plans, skip payment process and directly register
+        const registrationResponse = await api.post("/auth/register", userData);
+        login(registrationResponse.data.token);
+        router.push("/invoice-/invoice");
+      } else {
+        // For paid plans, continue with the existing payment flow
+        const orderResponse = await createOrder(userData.planId);
+        const { id: orderId, amount } = orderResponse.data;
 
-            const registrationResponse = await api.post(
-              "/auth/register",
-              registrationData
-            );
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: amount,
+          currency: "INR",
+          name: "Invoice App",
+          description: "Plan Subscription",
+          order_id: orderId,
+          handler: async (response: RazorpayResponse) => {
+            try {
+              await verifyPayment(response);
 
-            // Handle login after successful registration
-            login(registrationResponse.data.token);
+              const registrationData = {
+                ...userData,
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+              };
 
-            // Redirect to the invoice page
-            router.push("/invoice-/invoice");
-          } catch (error) {
-            console.error(
-              "Error during payment verification or registration:",
-              error
-            );
-            throw new Error("Payment verification or registration failed.");
+              const registrationResponse = await api.post(
+                "/auth/register",
+                registrationData
+              );
+
+              login(registrationResponse.data.token);
+              router.push("/invoice-/invoice");
+            } catch (error) {
+              console.error(
+                "Error during payment verification or registration:",
+                error
+              );
+              setError("Payment verification or registration failed.");
+            }
+          },
+          prefill: {
+            email: userData.email,
+            contact: userData.phone,
+          },
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+
+        paymentObject.on(
+          "payment.failed",
+          (response: RazorpayFailedResponse) => {
+            console.error("Payment failed:", response);
+            setError("Payment failed. Please try again.");
           }
-        },
-        prefill: {
-          email: userData.email,
-          contact: userData.phone,
-        },
-      };
-
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-
-      paymentObject.on("payment.failed", (response: RazorpayFailedResponse) => {
-        console.error("Payment failed:", response);
-        throw new Error("Payment failed");
-      });
+        );
+      }
     } catch (error) {
       console.error("Error in registration flow:", error);
       throw error; // Re-throw the error for further handling

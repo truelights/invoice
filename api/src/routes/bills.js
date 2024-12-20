@@ -91,6 +91,11 @@ router.post("/", auth, checkPlanExpiry, async (req, res) => {
       billId: bill._id,
       dataSnapshot: bill.toObject(),
     });
+
+    await Business.findByIdAndUpdate(req.businessId, {
+      lastReceiptNumber: business.lastReceiptNumber,
+      lastInvoiceNumber: business.lastInvoiceNumber,
+    });
     res.status(201).send(bill);
   } catch (error) {
     console.error(error);

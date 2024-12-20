@@ -7,6 +7,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Razorpay from "razorpay";
 import cron from "node-cron";
 import Plantransactions from "../models/plantransactions.js";
+import { body, validationResult } from "express-validator";
+
 const router = express.Router();
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -85,6 +87,11 @@ router.post("/renew-plan", async (req, res) => {
 
 router.post("/register", upload.single("logo"), async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const {
       email,
       password,
@@ -94,6 +101,8 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       phone,
       planId,
       paymentId,
+      orderId,
+      signature,
     } = req.body;
 
     let user = await User.findOne({ email });
@@ -101,8 +110,25 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    let logoUrl = null;
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
 
+    if (plan.price > 0) {
+      if (!paymentId || !orderId || !signature) {
+        return res
+          .status(400)
+          .json({ message: "Payment information missing for paid plan" });
+      }
+
+      const isPaymentValid = await verifyPayment(orderId, paymentId, signature);
+      if (!isPaymentValid) {
+        return res.status(400).json({ message: "Payment verification failed" });
+      }
+    }
+
+    let logoUrl = null;
     if (req.file) {
       const uploadResult = await uploadOnCloudinary(req.file.path);
       logoUrl = uploadResult.secure_url;
@@ -132,8 +158,6 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       await transaction.save();
     }
 
-    const plan = planId ? await Plan.findById(planId) : null;
-
     const business = new Business({
       name: businessName || "sample",
       gst: gst || "GST000000",
@@ -157,9 +181,9 @@ router.post("/register", upload.single("logo"), async (req, res) => {
         },
       ],
       verified: true,
-      lastReceiptNumber: 1,
+      lastReceiptNumber: 0,
       lastReceiptDate: new Date().toISOString().split("T")[0],
-      lastInvoiceNumber: 1,
+      lastInvoiceNumber: 0,
       plan: plan ? plan._id : null,
       planExpiry: plan
         ? new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000)
