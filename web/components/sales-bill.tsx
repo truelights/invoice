@@ -281,7 +281,7 @@ export default function SalesBill() {
               .map(
                 (item, index) => `
               <tr>
-                <td>${item.sr}</td>
+                <td>${index + 1}</td>
                 <td>${item.item}</td>
                 <td>${item.bags}</td>
                 <td>${item.weight}</td>
@@ -348,24 +348,39 @@ export default function SalesBill() {
     }
   };
 
-  const fetchBillDetails = async (receiptNo: string) => {
-    try {
-      const response = await fetchBillByReceiptNo(receiptNo);
+  type ErrorWithResponse = {
+    response?: {
+      status?: number;
+    };
+  };
 
-      if (response) {
-        setInvoiceNo(response.data.invoiceNo);
-        setCustomerDetails(response.data.customerDetails);
-        setItems(response.data.items);
-        setExpenses(response.data.expenses);
-        setBillDate(new Date(response.data.date).toISOString().split("T")[0]);
-        setPaymentType(response.data.paymentType);
-        setCommission(response.data.totalCommission);
+  const fetchBillDetails = async (receiptNo: string) => {
+    if (!receiptNo) {
+      alert("Please enter a receipt number.");
+    } else {
+      try {
+        const response = await fetchBillByReceiptNo(receiptNo);
+
+        if (response) {
+          setInvoiceNo(response.data.invoiceNo);
+          setCustomerDetails(response.data.customerDetails);
+          setItems(response.data.items);
+          setExpenses(response.data.expenses);
+          setBillDate(new Date(response.data.date).toISOString().split("T")[0]);
+          setPaymentType(response.data.paymentType);
+          setCommission(response.data.totalCommission);
+        }
+      } catch (error) {
+        console.error("Error fetching bill details:", error);
+
+        if ((error as ErrorWithResponse).response?.status === 404) {
+          alert("Bill not found for the given receipt number.");
+        }
+
+        alert(
+          "Failed to fetch bill details. Please check the receipt number and try again."
+        );
       }
-    } catch (error) {
-      console.error("Error fetching bill details:", error);
-      alert(
-        "Failed to fetch bill details. Please check the receipt number and try again."
-      );
     }
   };
 
@@ -477,7 +492,7 @@ export default function SalesBill() {
           <Input
             value={receiptNo}
             onChange={(e) => setReceiptNo(e.target.value)}
-            placeholder="Receipt No"
+            placeholder="Batch No"
             className="print:border-none"
           />
           <Button onClick={() => fetchBillDetails(receiptNo)}>Fetch</Button>
@@ -540,7 +555,7 @@ export default function SalesBill() {
             <TableBody>
               {items.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.sr}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>
                     <Select
                       value={item.item}

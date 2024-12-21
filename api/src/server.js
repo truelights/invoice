@@ -20,7 +20,7 @@ const corsOptions = {
     "http://localhost:3001",
     "https://dashboard-invoice-chi.vercel.app",
   ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };

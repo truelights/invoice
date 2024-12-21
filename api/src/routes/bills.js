@@ -50,6 +50,7 @@ router.get("/transactions", auth, checkPlanExpiry, async (req, res) => {
 router.post("/", auth, checkPlanExpiry, async (req, res) => {
   try {
     const { paymentType, netAmount, ...otherDetails } = req.body;
+    console.log(req.body);
     const business = await Business.findById(req.businessId);
 
     if (!business) {

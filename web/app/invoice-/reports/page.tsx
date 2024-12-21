@@ -41,6 +41,7 @@ interface Bill {
   invoiceNo: string;
   date: string;
   vendorDetails?: string;
+  customerDetails?: string;
   items: {
     item: string;
     bags: number;
@@ -72,6 +73,7 @@ interface ReportTableProps {
   bills: Bill[];
   totals: Totals;
   type: "purchase" | "sales";
+  onRowClick: (bill: Bill) => void;
 }
 
 const ReportsPage: React.FC = () => {
@@ -81,6 +83,8 @@ const ReportsPage: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<string>("today");
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  console.log(bills);
+
   useEffect(() => {
     const fetchBills = async () => {
       try {
@@ -153,6 +157,7 @@ const ReportsPage: React.FC = () => {
     setSelectedBill(bill);
     setIsDrawerOpen(true);
   };
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Reports</h1>
@@ -215,13 +220,6 @@ const ReportsPage: React.FC = () => {
   );
 };
 
-interface ReportTableProps {
-  bills: Bill[];
-  totals: Totals;
-  type: "purchase" | "sales";
-  onRowClick: (bill: Bill) => void;
-}
-
 const ReportTable: React.FC<ReportTableProps> = ({
   bills,
   totals,
@@ -255,7 +253,11 @@ const ReportTable: React.FC<ReportTableProps> = ({
             >
               <TableCell>{dayjs(bill.date).format("DD/MM/YYYY")}</TableCell>
               <TableCell>{bill.invoiceNo}</TableCell>
-              <TableCell>{bill.vendorDetails || "N/A"}</TableCell>
+              <TableCell>
+                {type === "purchase"
+                  ? bill.vendorDetails
+                  : bill.customerDetails || "N/A"}
+              </TableCell>
               <TableCell>₹{bill.totalAmount.toFixed(2)}</TableCell>
               <TableCell>₹{bill.totalExpense.toFixed(2)}</TableCell>
               <TableCell>₹{bill.netAmount.toFixed(2)}</TableCell>

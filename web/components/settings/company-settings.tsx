@@ -26,16 +26,21 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: name === "commission" ? parseFloat(value) : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await onUpdate(formData);
+    try {
+      await onUpdate(formData);
+    } catch (error) {
+      console.error("Error during update:", error);
+    }
   };
 
   return (
@@ -77,10 +82,11 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
         />
       </div>
       <div>
-        <Label htmlFor="phone">Commission</Label>
+        <Label htmlFor="commission">Commission</Label>
         <Input
           id="commission"
           name="commission"
+          type="number"
           value={formData.commission}
           onChange={handleChange}
         />

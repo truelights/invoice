@@ -11,6 +11,7 @@ const billSchema = new mongoose.Schema({
   invoiceNo: { type: String, required: true },
   date: { type: Date, required: true },
   vendorDetails: { type: String },
+  customerDetails: { type: String },
   items: [
     {
       item: String,

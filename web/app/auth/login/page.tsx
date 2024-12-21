@@ -150,7 +150,7 @@ export default function Login() {
                   type="button"
                   variant="outline"
                   className="w-full bg-gray-900 text-white hover:bg-gray-500 hover:text-white"
-                  onClick={() => router.push("/register")}
+                  onClick={() => router.push("/auth/register")}
                 >
                   Create New Account
                 </Button>
