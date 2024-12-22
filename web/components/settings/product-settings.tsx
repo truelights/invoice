@@ -95,7 +95,6 @@ export function ProductSettings({ settings, onUpdate }: ProductSettingsProps) {
           ))}
         </ul>
       </div>
-      <Button type="submit">Update Products</Button>
     </form>
   );
 }

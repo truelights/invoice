@@ -67,7 +67,6 @@ export function ExpenseSettings({ settings, onUpdate }: ExpenseSettingsProps) {
           ))}
         </ul>
       </div>
-      <Button type="submit">Update Expense Labels</Button>
     </form>
   );
 }
