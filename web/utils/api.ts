@@ -7,7 +7,7 @@ const api = axios.create({
 });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  console.log(token);
+  console.log("token",token);
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -124,12 +124,12 @@ export const register = async (userData: {
 };
 
 export const getSettings = async (): Promise<AxiosResponse<Settings>> => {
-    return await axios.get("/settings");
+    return await api.get("/settings");
   };
 export const updateSettings = async (
     settings: Partial<Settings>
   ): Promise<AxiosResponse<Settings>> => {
-    return await axios.patch("/settings", settings);
+    return await api.patch("/settings", settings);
   };
 
 export const getNewBillNumbers = () => api.get("/bills/new-numbers");

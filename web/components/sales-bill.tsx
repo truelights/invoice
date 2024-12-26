@@ -119,7 +119,7 @@ export default function SalesBill() {
         rate: 0,
         amount: 0,
         otherCharges: 0,
-        applyCommission: false,
+        applyCommission: true,
       },
     ]);
   };
@@ -136,7 +136,8 @@ export default function SalesBill() {
         [field]: value,
       };
       if (field === "bags" || field === "rate") {
-        newItems[index].amount = newItems[index].bags * newItems[index].rate;
+        newItems[index].amount = newItems[index].amount + Commission
+        newItems[index].amount  = newItems[index].bags * newItems[index].rate;
       }
       return newItems;
     });
@@ -159,7 +160,7 @@ export default function SalesBill() {
       0
     );
     const totalExpenses = expenses.reduce(
-      (sum, expense) => sum + expense.amount,
+      (sum, expense) => sum + expense.amount ,
       0
     );
     const commissionAmount = Commission || 0;
@@ -423,7 +424,7 @@ export default function SalesBill() {
           rate: 0,
           amount: 0,
           otherCharges: 0,
-          applyCommission: false,
+          applyCommission: true,
         },
       ]);
       setExpenses([]);
@@ -564,7 +565,7 @@ export default function SalesBill() {
                         );
                         if (selectedProduct) {
                           updateItem(index, "item", selectedProduct.name);
-                          updateItem(index, "rate", selectedProduct.price);
+                          updateItem(index, "rate", selectedProduct.price + Commission);
                           // Recalculate the amount
                           const newAmount = item.bags * selectedProduct.price;
                           updateItem(index, "amount", newAmount);

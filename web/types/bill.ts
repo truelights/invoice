@@ -16,7 +16,7 @@ export interface BillItem {
   weight: number;
   rate: number;
   amount: number;
-  
+
   otherCharges: number;
   applyCommission: boolean;
 }
