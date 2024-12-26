@@ -20,6 +20,8 @@ router.get("/", auth, checkPlanExpiry, async (req, res) => {
 
 router.patch("/", auth, checkPlanExpiry, async (req, res) => {
   const updates = req.body;
+  console.log(req.body);
+  
   try {
     const business = await Business.findByIdAndUpdate(req.businessId, updates, {
       new: true,

@@ -13,7 +13,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Plus, Trash2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -86,7 +85,7 @@ export default function SalesBill() {
       rate: 0,
       amount: 0,
       otherCharges: 0,
-      applyCommission: false,
+      applyCommission: true,
     },
   ]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -215,7 +214,7 @@ export default function SalesBill() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Purchase Bill</title>
+        <title>Sales Bill</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -263,7 +262,7 @@ export default function SalesBill() {
         <p><strong>Batch No:</strong> ${receiptNo}</p>
         <p><strong>Receipt No:</strong> ${invoiceNo}</p>
         <p><strong>Customer Details:</strong> ${customerDetails}</p>
-        
+
         <table>
           <thead>
             <tr>
@@ -306,7 +305,7 @@ export default function SalesBill() {
             <tr class="totals">
               <td colspan="5"></td>
               <td>Other Charges: ₹${totalOtherCharges.toFixed(2)}</td>
-            
+
             </tr>
             <tr class="totals">
               <td colspan="5"></td>
@@ -314,7 +313,7 @@ export default function SalesBill() {
             </tr>
           </tbody>
         </table>
-        
+
         <div class="signature">
           <p>Authorized Signature: _______________________</p>
         </div>
@@ -453,13 +452,7 @@ export default function SalesBill() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto p-6 print:shadow-none">
-      <label htmlFor="commission">Comission</label>
-      <Input
-        type="number"
-        id="commission"
-        value={Commission}
-        onChange={(e) => setCommission(Number(e.target.value))}
-      />
+
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start space-y-4 sm:space-y-0 print:pb-0">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-24 h-24 border rounded-lg flex items-center justify-center print:border-black">
@@ -539,6 +532,13 @@ export default function SalesBill() {
 
         <div className="overflow-x-auto">
           <Table className="w-full">
+        <label htmlFor="commission">Comission</label>
+      <Input
+        type="number"
+        id="commission"
+        value={Commission}
+        onChange={(e) => setCommission(Number(e.target.value))}
+      />
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Sr</TableHead>
@@ -548,7 +548,6 @@ export default function SalesBill() {
                 <TableHead>Rate</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Other Charges</TableHead>
-                <TableHead>Commission</TableHead>
                 <TableHead className="print:hidden"></TableHead>
               </TableRow>
             </TableHeader>
@@ -629,14 +628,7 @@ export default function SalesBill() {
                       className="w-24 print:border-none"
                     />
                   </TableCell>
-                  <TableCell>
-                    <Checkbox
-                      checked={item.applyCommission}
-                      onCheckedChange={(checked) =>
-                        updateItem(index, "applyCommission", checked as boolean)
-                      }
-                    />
-                  </TableCell>
+
                   <TableCell className="print:hidden">
                     <Button
                       variant="ghost"

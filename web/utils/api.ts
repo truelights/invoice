@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -7,15 +7,38 @@ const api = axios.create({
 });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  console.log(token);
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
-    // window.location.replace("/auth/login");
+
   }
   return config;
 });
-
+export type Settings = {
+    _id: string;
+    name: string;
+    gst: string;
+    address: string;
+    phone: string;
+    logo: string;
+    expenseLabels: string[];
+    products: Array<{ _id: string; name: string; price: number }>;
+    customers: Array<{
+      _id: string;
+      name: string;
+      address: string;
+      phone: string;
+    }>;
+    vendors: Array<{ _id: string; name: string; address: string; phone: string }>;
+    lastReceiptNumber: number;
+    commission: number;
+    lastReceiptDate: string;
+    lastInvoiceNumber: number;
+    plan: string;
+    verified: boolean;
+  };
 export const login = (email: string, password: string) =>
   api.post("/auth/login", { email, password });
 
@@ -100,10 +123,14 @@ export const register = async (userData: {
   }
 };
 
-export const getSettings = () => api.get("/settings");
-
-export const updateSettings = (settings: any) =>
-  api.patch("/settings", settings);
+export const getSettings = async (): Promise<AxiosResponse<Settings>> => {
+    return await axios.get("/settings");
+  };
+export const updateSettings = async (
+    settings: Partial<Settings>
+  ): Promise<AxiosResponse<Settings>> => {
+    return await axios.patch("/settings", settings);
+  };
 
 export const getNewBillNumbers = () => api.get("/bills/new-numbers");
 

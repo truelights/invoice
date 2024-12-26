@@ -9,7 +9,7 @@ type Settings = {
 
 type ExpenseSettingsProps = {
   settings: Settings;
-  onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
+  onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>; // Ensure it returns `Promise<Settings>`
 };
 
 export function ExpenseSettings({ settings, onUpdate }: ExpenseSettingsProps) {
@@ -18,15 +18,19 @@ export function ExpenseSettings({ settings, onUpdate }: ExpenseSettingsProps) {
   );
   const [newLabel, setNewLabel] = useState<string>("");
 
-  const handleAddLabel = () => {
+  const handleAddLabel = async () => {
     if (newLabel.trim()) {
-      setExpenseLabels((prev) => [...prev, newLabel.trim()]);
+      const updatedLabels = [...expenseLabels, newLabel.trim()];
+      setExpenseLabels(updatedLabels);
       setNewLabel("");
+      await onUpdate({ expenseLabels: updatedLabels });
     }
   };
 
-  const handleRemoveLabel = (index: number) => {
-    setExpenseLabels((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveLabel = async (index: number) => {
+    const updatedLabels = expenseLabels.filter((_, i) => i !== index);
+    setExpenseLabels(updatedLabels);
+    await onUpdate({ expenseLabels: updatedLabels });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

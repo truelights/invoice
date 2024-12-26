@@ -5,8 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSettings, updateSettings } from "@/utils/api";
 import { CompanySettings } from "@/components/settings/company-settings";
 import { ExpenseSettings } from "@/components/settings/expense-settings";
-import { ProductSettings } from "@/components/settings/product-settings";
+import ProductSettings from "@/components/settings/product-settings";
 import { CustomerSettings } from "@/components/settings/customer-settings";
+import { VendorSettings } from "@/components/settings/vendor-settings";
 
 export type Settings = {
   _id: string;
@@ -40,8 +41,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const data = await getSettings();
-        setSettings(data.data);
+        const response = await getSettings();
+        setSettings(response.data); // Correctly accessing AxiosResponse data
       } catch (err) {
         console.log(err);
         setError("Failed to load settings");
@@ -53,13 +54,18 @@ export default function SettingsPage() {
     fetchSettings();
   }, []);
 
-  const handleUpdateSettings = async (updatedSettings: Partial<Settings>) => {
+  const handleUpdateSettings = async (
+    updatedSettings: Partial<Settings>
+  ): Promise<Settings> => {
     try {
-      const data = await updateSettings(updatedSettings);
-      setSettings(data.data);
+      const response = await updateSettings(updatedSettings);
+      const updatedData = response.data;
+      setSettings(updatedData);
+      return updatedData;
     } catch (err) {
-      console.log(err);
+      console.error(err);
       setError("Failed to update settings");
+      throw err;
     }
   };
 
@@ -76,6 +82,7 @@ export default function SettingsPage() {
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
+          <TabsTrigger value="vendor">Vendor</TabsTrigger>
         </TabsList>
         <TabsContent value="company">
           <CompanySettings
@@ -97,6 +104,12 @@ export default function SettingsPage() {
         </TabsContent>
         <TabsContent value="customers">
           <CustomerSettings
+            settings={settings}
+            onUpdate={handleUpdateSettings}
+          />
+        </TabsContent>
+        <TabsContent value="vendor">
+          <VendorSettings
             settings={settings}
             onUpdate={handleUpdateSettings}
           />

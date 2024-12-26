@@ -13,7 +13,7 @@ type Settings = {
 
 type CompanySettingsProps = {
   settings: Settings;
-  onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
+  onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>; // Ensure it returns `Promise<Settings>`
 };
 
 export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {

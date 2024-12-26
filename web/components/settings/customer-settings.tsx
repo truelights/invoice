@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { v4 as uuidv4 } from 'uuid'; // Add this import
 
 type Customer = {
   _id: string;
@@ -15,10 +16,10 @@ type Settings = {
 };
 
 type CustomerSettingsProps = {
-  settings: Settings;
-  onUpdate: (updatedSettings: Partial<Settings>) => Promise<void>;
-};
-
+    settings: Settings; // `settings` is a complete `Settings` object
+    onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>; // Ensure it returns `Promise<Settings>`
+  };
+  
 export function CustomerSettings({
   settings,
   onUpdate,
@@ -37,22 +38,41 @@ export function CustomerSettings({
       newCustomer.address.trim() &&
       newCustomer.phone.trim()
     ) {
-      setCustomers((prev) => [
-        ...prev,
-        { ...newCustomer, _id: Date.now().toString() },
-      ]);
+      const updatedCustomers = [...customers, { ...newCustomer, _id: uuidv4() }];
+      setCustomers(updatedCustomers);
       setNewCustomer({ _id: "", name: "", address: "", phone: "" });
+      onUpdate({
+        customers: updatedCustomers.map((customer) => {
+          const { ...rest } = customer;
+          return rest;
+        }),
+      });
     }
   };
 
+
   const handleRemoveCustomer = (id: string) => {
-    setCustomers((prev) => prev.filter((customer) => customer._id !== id));
+    const updatedCustomers = customers.filter((customer) => customer._id !== id);
+    setCustomers(updatedCustomers);
+    onUpdate({
+      customers: updatedCustomers.map((customer) => {
+        const { ...rest } = customer;
+        return rest;
+      }),
+    });
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onUpdate({ customers });
+    await onUpdate({
+      customers: customers.map((customer) => {
+        const { ...rest } = customer;
+        return rest;
+      }),
+    });
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,7 +117,7 @@ export function CustomerSettings({
         <ul className="space-y-2">
           {customers.map((customer) => (
             <li
-              key={customer._id}
+              key={customer._id} // Use _id as key
               className="flex justify-between items-center"
             >
               <span>
@@ -106,7 +126,7 @@ export function CustomerSettings({
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => handleRemoveCustomer(customer._id)}
+                onClick={() => handleRemoveCustomer(customer._id)} // Pass _id to handler
               >
                 Remove
               </Button>
@@ -114,7 +134,6 @@ export function CustomerSettings({
           ))}
         </ul>
       </div>
-      <Button type="submit">Update Customers</Button>
     </form>
   );
 }

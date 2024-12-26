@@ -18,6 +18,10 @@ interface Transaction {
     paymentType: string;
     duedate?: string;
     recievedAmount: number;
+    totalAmount: number;
+    customerDetails?: string;
+    vendorDetails?: string;
+    receiptNo: string;
   };
 }
 
@@ -138,7 +142,11 @@ const TransactionsPage = () => {
             {sortedTransactions.map((transaction) => (
               <Card
                 key={transaction._id}
-                className="cursor-pointer hover:bg-gray-100"
+                className={`cursor-pointer hover:bg-gray-100 ${
+                  transaction.billType === "purchase" ? "border-l-4 border-l-blue-500" :
+                  transaction.billType === "sales" ? "border-l-4 border-l-green-500" :
+                  ""
+                }`}
                 onClick={() => handleTransactionClick(transaction)}
               >
                 <CardContent className="flex justify-between items-center p-4">
@@ -153,30 +161,44 @@ const TransactionsPage = () => {
                       Invoice: {transaction.dataSnapshot.invoiceNo}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Received: ₹
-                      {transaction.dataSnapshot.recievedAmount.toFixed(2)}
+                      Received: ₹{transaction.dataSnapshot.recievedAmount.toFixed(2)}
                     </p>
-                    {transaction.dataSnapshot.paymentType === "credit" && (
+                    <p className="text-sm text-muted-foreground">
+                      Net Amount: ₹{transaction.dataSnapshot.netAmount.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Remaining: <span className={transaction.dataSnapshot.paymentType === "credit" ? "text-red-600" : ""}>
+                        ₹{(transaction.dataSnapshot.netAmount - transaction.dataSnapshot.recievedAmount).toFixed(2)}
+                      </span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Payment Type: {transaction.dataSnapshot.paymentType || "N/A"}
+                    </p>
+                    {transaction.dataSnapshot.duedate && (
                       <p className="text-sm text-muted-foreground">
-                        Due:{" "}
-                        {new Date(
-                          transaction.dataSnapshot.duedate || ""
-                        ).toLocaleDateString()}
+                        Due Date: {new Date(transaction.dataSnapshot.duedate).toLocaleDateString()}
                       </p>
                     )}
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.billType === "sales"
+                        ? `Customer: ${transaction.dataSnapshot.customerDetails}`
+                        : `Vendor: ${transaction.dataSnapshot.vendorDetails}`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Receipt No: {transaction.dataSnapshot.receiptNo}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p
                       className={`font-bold ${
                         transaction.dataSnapshot.paymentType === "credit"
                           ? "text-red-600"
+                          : transaction.billType === "purchase"
+                          ? "text-blue-600"
                           : "text-green-600"
                       }`}
                     >
-                      ₹{transaction.dataSnapshot.netAmount.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.dataSnapshot.paymentType || "N/A"}
+                      ₹{transaction.dataSnapshot.totalAmount.toFixed(2)}
                     </p>
                   </div>
                 </CardContent>

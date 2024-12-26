@@ -5,6 +5,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerClose,
+  DrawerFooter,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,17 @@ interface BillDataSnapshot {
   paymentType: string;
   recievedAmount: number;
   netAmount: number;
+  totalAmount: number;
+  invoiceNo: string;
+  receiptNo: string;
+  customerDetails?: string;
+  vendorDetails?: string;
+  duedate?: string;
 }
 
 interface Bill {
   billId: string;
+  billType: string;
   dataSnapshot: BillDataSnapshot;
 }
 
@@ -39,6 +47,7 @@ interface BillUpdates {
   paymentType: string;
   recievedAmount: number;
 }
+
 export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
   isOpen,
   onClose,
@@ -81,12 +90,30 @@ export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
           <DrawerTitle>Update Bill</DrawerTitle>
           <DrawerClose onClick={onClose} />
         </DrawerHeader>
-        <div className="p-4">
-          <h1>
-            Remaining Amount ={" "}
-            {bill.dataSnapshot.netAmount - bill.dataSnapshot.recievedAmount}
-          </h1>
-          <div className="mb-4">
+        <div className="p-4 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Bill Details</h2>
+            <p>Invoice No: {bill.dataSnapshot.invoiceNo}</p>
+            <p>Receipt No: {bill.dataSnapshot.receiptNo}</p>
+            <p>
+              {bill.billType === "sales" ? "Customer" : "Vendor"}:{" "}
+              {bill.billType === "sales"
+                ? bill.dataSnapshot.customerDetails
+                : bill.dataSnapshot.vendorDetails}
+            </p>
+            <p>Total Amount: ₹{bill.dataSnapshot.totalAmount.toFixed(2)}</p>
+            <p>Net Amount: ₹{bill.dataSnapshot.netAmount.toFixed(2)}</p>
+            <p>Received Amount: ₹{bill.dataSnapshot.recievedAmount.toFixed(2)}</p>
+            <p>
+              Remaining Amount: ₹
+              {(bill.dataSnapshot.netAmount - bill.dataSnapshot.recievedAmount).toFixed(2)}
+            </p>
+            <p>Current Payment Type: {bill.dataSnapshot.paymentType || "N/A"}</p>
+            {bill.dataSnapshot.duedate && (
+              <p>Due Date: {new Date(bill.dataSnapshot.duedate).toLocaleDateString()}</p>
+            )}
+          </div>
+          <div>
             <Label htmlFor="currentAmount">Current Received Amount</Label>
             <Input
               id="currentAmount"
@@ -94,7 +121,7 @@ export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
               onChange={(e) => setNewReceivedAmount(Number(e.target.value))}
             />
           </div>
-          <div className="mb-4">
+          <div>
             <Label htmlFor="additionalAmount">Additional Amount</Label>
             <Input
               id="additionalAmount"
@@ -103,7 +130,7 @@ export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
               onChange={(e) => setAdditionalAmount(Number(e.target.value))}
             />
           </div>
-          <div className="mb-4">
+          <div>
             <Label htmlFor="newTotal">New Total</Label>
             <Input
               id="newTotal"
@@ -111,7 +138,7 @@ export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
               disabled
             />
           </div>
-          <div className="mb-4">
+          <div>
             <Label htmlFor="paymentType">Payment Type</Label>
             <Select value={newPaymentType} onValueChange={setNewPaymentType}>
               <SelectTrigger id="paymentType">
@@ -121,11 +148,14 @@ export const BillUpdateDrawer: React.FC<BillUpdateDrawerProps> = ({
                 <SelectItem value="cash">Cash</SelectItem>
                 <SelectItem value="credit">Credit</SelectItem>
                 <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="cheque">Cheque</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleUpdate}>Update Bill</Button>
         </div>
+        <DrawerFooter>
+          <Button onClick={handleUpdate}>Update Bill</Button>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
