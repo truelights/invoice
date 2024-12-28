@@ -2,10 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { v4 as uuidv4 } from 'uuid'; // Add this import
 
 type Customer = {
-  _id: string;
   name: string;
   address: string;
   phone: string;
@@ -16,63 +14,46 @@ type Settings = {
 };
 
 type CustomerSettingsProps = {
-    settings: Settings; // `settings` is a complete `Settings` object
-    onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>; // Ensure it returns `Promise<Settings>`
-  };
-  
+  settings: Settings;
+  onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>;
+};
+
 export function CustomerSettings({
   settings,
   onUpdate,
 }: CustomerSettingsProps) {
   const [customers, setCustomers] = useState<Customer[]>(settings.customers);
   const [newCustomer, setNewCustomer] = useState<Customer>({
-    _id: "",
     name: "",
     address: "",
     phone: "",
   });
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (
       newCustomer.name.trim() &&
       newCustomer.address.trim() &&
       newCustomer.phone.trim()
     ) {
-      const updatedCustomers = [...customers, { ...newCustomer, _id: uuidv4() }];
+      const updatedCustomers = [...customers, { ...newCustomer }];
       setCustomers(updatedCustomers);
-      setNewCustomer({ _id: "", name: "", address: "", phone: "" });
-      onUpdate({
-        customers: updatedCustomers.map((customer) => {
-          const { ...rest } = customer;
-          return rest;
-        }),
-      });
+      setNewCustomer({ name: "", address: "", phone: "" });
+      await onUpdate({ customers: updatedCustomers });
+    } else {
+      console.error("Please fill in all fields.");
     }
   };
 
-
-  const handleRemoveCustomer = (id: string) => {
-    const updatedCustomers = customers.filter((customer) => customer._id !== id);
+  const handleRemoveCustomer = async (index: number) => {
+    const updatedCustomers = customers.filter((_, i) => i !== index);
     setCustomers(updatedCustomers);
-    onUpdate({
-      customers: updatedCustomers.map((customer) => {
-        const { ...rest } = customer;
-        return rest;
-      }),
-    });
+    await onUpdate({ customers: updatedCustomers });
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onUpdate({
-      customers: customers.map((customer) => {
-        const { ...rest } = customer;
-        return rest;
-      }),
-    });
+    await onUpdate({ customers });
   };
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,18 +96,15 @@ export function CustomerSettings({
       <div>
         <Label>Customers</Label>
         <ul className="space-y-2">
-          {customers.map((customer) => (
-            <li
-              key={customer._id} // Use _id as key
-              className="flex justify-between items-center"
-            >
+          {customers.map((customer, index) => (
+            <li key={index} className="flex justify-between items-center">
               <span>
                 {customer.name} - {customer.phone}
               </span>
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => handleRemoveCustomer(customer._id)} // Pass _id to handler
+                onClick={() => handleRemoveCustomer(index)}
               >
                 Remove
               </Button>

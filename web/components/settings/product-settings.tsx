@@ -27,7 +27,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface Product {
-  _id: string;
   name: string;
   price: number;
 }
@@ -48,7 +47,7 @@ const formSchema = z.object({
 
 const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
   const [products, setProducts] = useState<Product[]>(settings.products || []);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -63,23 +62,22 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
     try {
       let updatedProducts: Product[];
 
-      if (editingProduct) {
+      if (editingIndex !== null) {
         // Update existing product
-        updatedProducts = products.map((product) =>
-          product._id === editingProduct._id ? { ...product, ...values } : product
+        updatedProducts = products.map((product, index) =>
+          index === editingIndex ? { ...product, ...values } : product
         );
         toast({ title: 'Product updated', description: `${values.name} has been updated.` });
       } else {
         // Add new product
-        const newProduct: Product = { _id: crypto.randomUUID(), ...values };
-        updatedProducts = [...products, newProduct];
+        updatedProducts = [...products, values];
         toast({ title: 'Product added', description: `${values.name} has been added.` });
       }
 
       setProducts(updatedProducts);
-      await onUpdate({ products: updatedProducts });
       form.reset();
-      setEditingProduct(null);
+      setEditingIndex(null);
+      await onUpdate({ products: updatedProducts });
     } catch (error) {
       console.error('Error updating products:', error);
       toast({
@@ -90,9 +88,9 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
     }
   };
 
-  const handleRemoveProduct = async (id: string) => {
+  const handleRemoveProduct = async (index: number) => {
     try {
-      const updatedProducts = products.filter((product) => product._id !== id);
+      const updatedProducts = products.filter((_, i) => i !== index);
       setProducts(updatedProducts);
       await onUpdate({ products: updatedProducts });
       toast({ title: 'Product removed', description: 'The product has been removed.' });
@@ -106,8 +104,9 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
     }
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
+  const handleEditProduct = (index: number) => {
+    setEditingIndex(index);
+    const product = products[index];
     form.reset({ name: product.name, price: product.price });
   };
 
@@ -115,7 +114,20 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Product List</h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleAddOrUpdateProduct)} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit((data) => {
+              const numericPrice = parseFloat(data.price.toString());
+              if (isNaN(numericPrice)) {
+                form.setError('price', { type: 'manual', message: 'Invalid price' });
+                return;
+              }
+              handleAddOrUpdateProduct({ ...data, price: numericPrice });
+            })();
+          }}
+          className="space-y-4"
+        >
           <FormField
             control={form.control}
             name="name"
@@ -151,9 +163,9 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
             )}
           />
           <div className="flex space-x-2">
-            <Button type="submit">{editingProduct ? 'Update Product' : 'Add Product'}</Button>
-            {editingProduct && (
-              <Button type="button" variant="outline" onClick={() => setEditingProduct(null)}>
+            <Button type="submit">{editingIndex !== null ? 'Update Product' : 'Add Product'}</Button>
+            {editingIndex !== null && (
+              <Button type="button" variant="outline" onClick={() => setEditingIndex(null)}>
                 Cancel Edit
               </Button>
             )}
@@ -169,8 +181,8 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
-            <TableRow key={product._id}>
+          {products.map((product, index) => (
+            <TableRow key={index}>
               <TableCell>{product.name}</TableCell>
               <TableCell>${product.price.toFixed(2)}</TableCell>
               <TableCell>
@@ -178,7 +190,7 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => handleEditProduct(product)}
+                    onClick={() => handleEditProduct(index)}
                   >
                     <Edit2 className="h-4 w-4" />
                     <span className="sr-only">Edit product</span>
@@ -186,7 +198,7 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => handleRemoveProduct(product._id)}
+                    onClick={() => handleRemoveProduct(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Remove product</span>

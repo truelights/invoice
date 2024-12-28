@@ -9,34 +9,11 @@ import ProductSettings from "@/components/settings/product-settings";
 import { CustomerSettings } from "@/components/settings/customer-settings";
 import { VendorSettings } from "@/components/settings/vendor-settings";
 
-export type Settings = {
-  _id: string;
-  name: string;
-  gst: string;
-  address: string;
-  phone: string;
-  logo: string;
-  expenseLabels: string[];
-  products: Array<{ _id: string; name: string; price: number }>;
-  customers: Array<{
-    _id: string;
-    name: string;
-    address: string;
-    phone: string;
-  }>;
-  vendors: Array<{ _id: string; name: string; address: string; phone: string }>;
-  lastReceiptNumber: number;
-  commission: number;
-  lastReceiptDate: string;
-  lastInvoiceNumber: number;
-  plan: string;
-  verified: boolean;
-};
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -55,9 +32,11 @@ export default function SettingsPage() {
   }, []);
 
   const handleUpdateSettings = async (
-    updatedSettings: Partial<Settings>
-  ): Promise<Settings> => {
+    updatedSettings
+  ) => {
     try {
+        console.log(updatedSettings);
+
       const response = await updateSettings(updatedSettings);
       const updatedData = response.data;
       setSettings(updatedData);

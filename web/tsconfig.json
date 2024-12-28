@@ -28,7 +28,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/invoice-/settings/page.tsx"
+    "app/invoice-/settings/page.jsx"
   ],
   "exclude": ["node_modules"]
 }

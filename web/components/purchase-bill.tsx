@@ -243,7 +243,7 @@ export default function PurchaseBill() {
         <p><strong>Batch No:</strong> ${receiptNo}</p>
         <p><strong>Receipt No:</strong> ${invoiceNo}</p>
         <p><strong>Vendor:</strong> ${vendorDetails}</p>
-        
+
         <table>
           <thead>
             <tr>
@@ -289,7 +289,7 @@ export default function PurchaseBill() {
             </tr>
           </tbody>
         </table>
-        
+
         <div class="signature">
           <p>Authorized Signature: _______________________</p>
         </div>
@@ -367,10 +367,7 @@ export default function PurchaseBill() {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="flex justify-between mb-4 print:hidden">
-        <Button onClick={handleSave}>Save Bill</Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" /> Print Bill
-        </Button>
+
       </div>
       <div className="print-area">
         <Card className="p-6 print:shadow-none print:border-none">
@@ -627,7 +624,11 @@ export default function PurchaseBill() {
                 </div>
               </div>
             </div>
+            <Button onClick={handleSave}>Save Bill</Button>
           </CardContent>
+        <Button onClick={handlePrint}>
+          <Printer className="mr-2 h-4 w-4" /> Print Bill
+        </Button>
         </Card>
       </div>
     </div>
