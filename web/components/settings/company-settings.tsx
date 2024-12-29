@@ -2,34 +2,36 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { z } from "zod";
 
-type Settings = {
-  name: string;
-  gst: string;
-  address: string;
-  phone: string;
-  commission: number;
-};
+// Define Zod schema for validation
+const companySchema = z.object({
+  name: z.string().nonempty("Company name is required."),
+  address: z.string().nonempty("Address is required."),
+  phone: z
+    .string()
+    .regex(/^\d{10}$/, "Phone must be exactly 10 digits."),
+  commission: z
+    .number()
+    .min(0, "Commission must be a positive number.")
+});
+
+type Settings = z.infer<typeof companySchema>;
 
 type CompanySettingsProps = {
   settings: Settings;
-  onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>; // Ensure it returns `Promise<Settings>`
+  onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>;
 };
 
 export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
-  const [formData, setFormData] = useState<Settings>({
-    name: settings.name,
-    gst: settings.gst,
-    address: settings.address,
-    phone: settings.phone,
-    commission: settings.commission,
-  });
+  const [formData, setFormData] = useState<Settings>(settings);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "commission" ? parseFloat(value) : value,
+      [name]: name === "commission" ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -37,14 +39,21 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
     e.preventDefault();
 
     try {
+      // Validate the form data using Zod
+      companySchema.parse(formData);
+
+      setError(null); // Clear previous errors
       await onUpdate(formData);
-    } catch (error) {
-      console.error("Error during update:", error);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError(err.errors[0].message); // Display the first validation error
+      }
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div style={{ color: "red" }}>{error}</div>}
       <div>
         <Label htmlFor="name">Company Name</Label>
         <Input
@@ -54,15 +63,7 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
           onChange={handleChange}
         />
       </div>
-      <div>
-        <Label htmlFor="gst">GST Number</Label>
-        <Input
-          id="gst"
-          name="gst"
-          value={formData.gst}
-          onChange={handleChange}
-        />
-      </div>
+
       <div>
         <Label htmlFor="address">Address</Label>
         <Input

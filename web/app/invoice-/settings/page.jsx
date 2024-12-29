@@ -35,8 +35,6 @@ export default function SettingsPage() {
     updatedSettings
   ) => {
     try {
-        console.log(updatedSettings);
-
       const response = await updateSettings(updatedSettings);
       const updatedData = response.data;
       setSettings(updatedData);
@@ -56,8 +54,8 @@ export default function SettingsPage() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Settings</h1>
       <Tabs defaultValue="company">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="company">Company</TabsTrigger>
+      <TabsList className="grid grid-cols-5 gap-4 mb-4">
+      <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>

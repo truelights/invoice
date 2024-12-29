@@ -2,12 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { z } from "zod";
 
-type Customer = {
-  name: string;
-  address: string;
-  phone: string;
-};
+
+const customerSchema = z.object({
+    name: z.string().nonempty("Name is required."),
+    address: z.string().nonempty("Address is required."),
+    phone: z
+      .string()
+      .min(10, "Phone number must be at least 10 digits.")
+      .regex(/^\d+$/, "Phone number must contain only digits."),
+  });
+
+  type Customer = z.infer<typeof customerSchema>;
+
 
 type Settings = {
   customers: Customer[];
@@ -28,21 +36,23 @@ export function CustomerSettings({
     address: "",
     phone: "",
   });
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddCustomer = async () => {
-    if (
-      newCustomer.name.trim() &&
-      newCustomer.address.trim() &&
-      newCustomer.phone.trim()
-    ) {
+    try {
+      customerSchema.parse(newCustomer); // Validate the customer
       const updatedCustomers = [...customers, { ...newCustomer }];
       setCustomers(updatedCustomers);
       setNewCustomer({ name: "", address: "", phone: "" });
+      setError(null); // Clear previous errors
       await onUpdate({ customers: updatedCustomers });
-    } else {
-      console.error("Please fill in all fields.");
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        setError(e.errors[0].message); // Display the first validation error
+      }
     }
   };
+
 
   const handleRemoveCustomer = async (index: number) => {
     const updatedCustomers = customers.filter((_, i) => i !== index);
@@ -87,30 +97,61 @@ export function CustomerSettings({
           onChange={(e) =>
             setNewCustomer((prev) => ({ ...prev, phone: e.target.value }))
           }
-          placeholder="Enter customer phone"
+          type="number"
+          placeholder="Enter customer phone (min 10 digits)"
         />
       </div>
       <Button type="button" onClick={handleAddCustomer}>
         Add Customer
       </Button>
       <div>
+
+      {error && <span style={{ color: "red" }}>{error}</span>}
+      </div>
+      <div>
         <Label>Customers</Label>
-        <ul className="space-y-2">
-          {customers.map((customer, index) => (
-            <li key={index} className="flex justify-between items-center">
-              <span>
-                {customer.name} - {customer.phone}
-              </span>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => handleRemoveCustomer(index)}
-              >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <table className="min-w-full border-collapse border border-gray-200">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-4 py-2 text-left">
+                Name
+              </th>
+              <th className="border border-gray-300 px-4 py-2 text-left">
+                Address
+              </th>
+              <th className="border border-gray-300 px-4 py-2 text-left">
+                Phone
+              </th>
+              <th className="border border-gray-300 px-4 py-2 text-left">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((customer, index) => (
+              <tr key={index} className="hover:bg-gray-50">
+                <td className="border border-gray-300 px-4 py-2">
+                  {customer.name}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
+                  {customer.address}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
+                  {customer.phone}
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => handleRemoveCustomer(index)}
+                  >
+                    Remove
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </form>
   );

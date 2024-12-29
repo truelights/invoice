@@ -184,7 +184,7 @@ const ProductSettings: React.FC<Props> = ({ settings, onUpdate }) => {
           {products.map((product, index) => (
             <TableRow key={index}>
               <TableCell>{product.name}</TableCell>
-              <TableCell>${product.price.toFixed(2)}</TableCell>
+              <TableCell>₹ {product.price.toFixed(2)}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button
