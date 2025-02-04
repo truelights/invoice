@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { login } from "@/utils/api";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,20 +16,17 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { login: authLogin } = useAuth();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await login(email, password);
       authLogin(response.data.token);
-      router.push("/invoice-/invoice");
+      router.push("/");
     } catch (error) {
       console.log(error);
-
       setError("Invalid credentials");
     }
   };
-
   return (
     <div className="min-h-screen flex">
       {/* Left side illustration */}
@@ -44,7 +39,6 @@ export default function Login() {
           className="max-w-full h-auto"
         />
       </div>
-
       {/* Right side login form */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-[440px] space-y-6">
@@ -58,14 +52,12 @@ export default function Login() {
               className="max-w-full h-12 w-12"
             />
           </div>
-
           {/* Login form */}
           <div className="space-y-6">
             <div className="space-y-2 text-center">
               <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
               <p className="text-sm text-muted-foreground">Login</p>
             </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-4">
                 <Input
@@ -75,7 +67,6 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -96,7 +87,6 @@ export default function Login() {
                     )}
                   </button>
                 </div>
-
                 <div>
                   <Button
                     type="button"
@@ -115,7 +105,6 @@ export default function Login() {
                     onChange={(e) => setOtp(e.target.value)}
                   />
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="remember" />
@@ -134,18 +123,15 @@ export default function Login() {
                     Forgot password?
                   </Button>
                 </div>
-
                 {error && (
                   <p className="text-sm text-red-500 text-center">{error}</p>
                 )}
-
                 <Button
                   type="submit"
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
                   Sign In
                 </Button>
-
                 <Button
                   type="button"
                   variant="outline"
@@ -156,7 +142,6 @@ export default function Login() {
                 </Button>
               </div>
             </form>
-
             <Button
               type="button"
               variant="link"
@@ -166,7 +151,6 @@ export default function Login() {
               View All Features
             </Button>
           </div>
-
           {/* Footer */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <Image

@@ -230,7 +230,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
     <CardHeader>
       <CardTitle>{type === "purchase" ? "Purchase" : "Sales"} Report</CardTitle>
     </CardHeader>
-    <CardContent>
+    <CardContent className="overflow-auto ">
       <Table>
         <TableHeader>
           <TableRow>
@@ -242,6 +242,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
             <TableHead>Net Amount</TableHead>
             <TableHead>Received Amount</TableHead>
             <TableHead>Payment Type</TableHead>
+            <TableHead>Batch Number</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -256,13 +257,14 @@ const ReportTable: React.FC<ReportTableProps> = ({
               <TableCell>
                 {type === "purchase"
                   ? bill.vendorDetails
-                  : bill.customerDetails || "N/A"}
+                  : bill.customerDetails?.split(",").map(item => item.trim())[0] || "N/A"}
               </TableCell>
               <TableCell>₹{bill.totalAmount.toFixed(2)}</TableCell>
               <TableCell>₹{bill.totalExpense.toFixed(2)}</TableCell>
               <TableCell>₹{bill.netAmount.toFixed(2)}</TableCell>
               <TableCell>₹{bill.recievedAmount.toFixed(2)}</TableCell>
-              <TableCell>{bill.paymentType}</TableCell>
+              <TableCell>{bill.paymentType || "Not Recieved"}</TableCell>
+              <TableCell>{bill.receiptNo}</TableCell>
             </TableRow>
           ))}
           <TableRow className="font-bold">

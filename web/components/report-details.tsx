@@ -8,23 +8,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import dayjs from "dayjs";
-
 interface Item {
   item: string;
   bags: number;
   weight: number;
   amount: number;
 }
-
 interface Expense {
   type: string;
   amount: number;
 }
-
 interface Bill {
   type: "purchase" | "sales";
   invoiceNo: string;
   date: string;
+  customerDetails: string;
   vendorDetails?: string;
   paymentType: string;
   items: Item[];
@@ -34,14 +32,12 @@ interface Bill {
   netAmount: number;
   recievedAmount: number;
 }
-
 interface ReportDetailsProps {
   bill: Bill;
 }
-
 export const ReportDetails: React.FC<ReportDetailsProps> = ({ bill }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-auto h-100 p-10">
       <h2 className="text-2xl font-bold">
         {bill.type === "purchase" ? "Purchase" : "Sales"} Report Details
       </h2>
@@ -58,25 +54,25 @@ export const ReportDetails: React.FC<ReportDetailsProps> = ({ bill }) => {
           <p className="font-semibold">
             {bill.type === "purchase" ? "Vendor" : "Customer"}:
           </p>
-          <p>{bill.vendorDetails || "N/A"}</p>
+          <p>{bill.vendorDetails || bill.customerDetails.split(",").map(item => item.trim())[0]}</p>
         </div>
         <div>
           <p className="font-semibold">Payment Type:</p>
-          <p>{bill.paymentType}</p>
+          <p>{bill.paymentType || "Not Received"}</p>
         </div>
       </div>
       <div>
         <h3 className="text-xl font-semibold mb-2">Items</h3>
-        <Table>
-          <TableHeader>
-            <TableRow>
+        <Table className="w-full border-collapse bg-gray-50">
+          <TableHeader className="border-separate  border border-gray-400  ">
+            <TableRow className="border border-gray-300">
               <TableHead>Item</TableHead>
               <TableHead>Bags</TableHead>
               <TableHead>Weight</TableHead>
               <TableHead>Amount</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="border border-gray-300">
             {bill.items.map((item, index) => (
               <TableRow key={index}>
                 <TableCell>{item.item || "Unnamed Item"}</TableCell>

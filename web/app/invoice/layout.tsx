@@ -31,16 +31,16 @@ export default function InvoiceLayout({
           <nav className="border-b">
             <div className="container mx-auto px-4 py-2 flex justify-between items-center">
               <div className="flex gap-4">
-                <Link href="/invoice-/invoice">
+                <Link href="/invoice/invoice">
                   <Button variant="ghost">Bills</Button>
                 </Link>
-                <Link href="/invoice-/transactions">
+                <Link href="/invoice/transactions">
                   <Button variant="ghost">Transactions</Button>
                 </Link>
-                <Link href="/invoice-/reports">
+                <Link href="/invoice/reports">
                   <Button variant="ghost">Reports</Button>
                 </Link>
-                <Link href="/invoice-/settings">
+                <Link href="/invoice/settings">
                   <Button variant="ghost">Settings</Button>
                 </Link>
               </div>

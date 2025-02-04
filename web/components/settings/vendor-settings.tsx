@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 
-interface Vendor {
+export interface Vendor {
   name: string;
   address: string;
   phone: string;

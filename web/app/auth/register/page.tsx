@@ -483,7 +483,14 @@ export default function Register() {
             </Button>
           </div>
         </form>
-
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full bg-gray-900 text-white hover:bg-gray-500 hover:text-white"
+          onClick={() => router.push("/auth/login")}
+        >
+          Login If you have an account
+        </Button>
         {/* Footer */}
         <footer className="text-center space-y-2 text-sm text-gray-500">
           <div className="flex items-center justify-center gap-2">

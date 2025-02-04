@@ -1,82 +1,34 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Printer, Plus, Trash2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image"
+import { useSettings } from "@/hooks/useSettings"
+import { getNewBillNumbers, createBill, updateSettings, fetchBillByReceiptNo } from "@/utils/api"
+import { CustomerSettings } from "@/components/settings/customer-settings"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Printer, Plus, Trash2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import Image from "next/image";
-import {
-  BillItem,
-  BusinessDetails,
-  Expense,
-  Customer,
-  Product,
-} from "@/types/bill";
-import { useSettings } from "@/hooks/useSettings";
-import {
-  getNewBillNumbers,
-  createBill,
-  fetchBillByReceiptNo,
-} from "@/utils/api";
-
-interface Settings {
-  name: string;
-  gst: string;
-  address: string;
-  number: string;
-  logo?: string;
-  expenseLabels: string[];
-  customers: Customer[];
-  products: Product[];
-  commission: number;
-}
-
-interface BillNumbers {
-  receiptNo: string;
-  invoiceNo: string;
-}
-
-interface BillData {
-  type: string;
-  receiptNo: string;
-  invoiceNo: string;
-  date: string;
-  customerDetails: string;
-  items: BillItem[];
-  expenses: Expense[];
-  totalAmount: number;
-  totalOtherCharges: number;
-  totalExpense: number;
-  totalCommission: number;
-  netAmount: number;
-  paymentType: string;
-}
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 export default function SalesBill() {
-  const { settings } = useSettings() as { settings: Settings | null };
-
-  const [business, setBusiness] = useState<BusinessDetails>({});
-  const [receiptNo, setReceiptNo] = useState("");
-  const [invoiceNo, setInvoiceNo] = useState("");
-  const [customerDetails, setCustomerDetails] = useState("");
-  const [paymentType, setPaymentType] = useState("");
-  const [items, setItems] = useState<BillItem[]>([
+  const { settings: initialSettings } = useSettings()
+  const [settings, setSettings] = useState(null)
+  const [business, setBusiness] = useState({})
+  const [receiptNo, setReceiptNo] = useState("")
+  const [invoiceNo, setInvoiceNo] = useState("")
+  const [customerDetails, setCustomerDetails] = useState("")
+  const [paymentType, setPaymentType] = useState("")
+  const [items, setItems] = useState([
     {
       sr: 1,
       item: "",
@@ -87,26 +39,25 @@ export default function SalesBill() {
       otherCharges: 0,
       applyCommission: true,
     },
-  ]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [billDate, setBillDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-  const [Commission, setCommission] = useState<number>(0);
+  ])
+  const [expenses, setExpenses] = useState([])
+  const [billDate, setBillDate] = useState(new Date().toISOString().split("T")[0])
+  const [Commission, setCommission] = useState(0)
 
   useEffect(() => {
-    if (settings) {
-      setBusiness(settings);
+    if (initialSettings) {
+      setSettings(initialSettings)
+      setBusiness(initialSettings)
       setExpenses(
-        settings.expenseLabels.map((label: string) => ({
+        initialSettings.expenseLabels.map((label) => ({
           type: label,
           amount: 0,
-        }))
-      );
-      setCommission(settings?.commission);
-      fetchNewBillNumbers();
+        })),
+      )
+      setCommission(initialSettings?.commission)
+      fetchNewBillNumbers()
     }
-  }, [settings]);
+  }, [initialSettings])
 
   const addItem = () => {
     setItems([
@@ -121,91 +72,75 @@ export default function SalesBill() {
         otherCharges: 0,
         applyCommission: true,
       },
-    ]);
-  };
+    ])
+  }
 
-  const updateItem = (
-    index: number,
-    field: keyof BillItem,
-    value: number | string | boolean
-  ) => {
+  const updateItem = (index, field, value) => {
     setItems((prevItems) => {
-      const newItems = [...prevItems];
+      const newItems = [...prevItems]
       newItems[index] = {
         ...newItems[index],
         [field]: value,
-      };
-      if (field === "bags" || field === "rate") {
-        newItems[index].amount = newItems[index].amount + Commission
-        newItems[index].amount  = newItems[index].bags * newItems[index].rate;
       }
-      return newItems;
-    });
-  };
+      if (field === "bags" || field === "rate") {
+        const rate = Number(newItems[index].rate)
+        const bags = Number(newItems[index].bags)
+        newItems[index].amount = bags * rate
+      }
+      return newItems
+    })
+  }
 
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
+  const removeItem = (index) => {
+    setItems(items.filter((_, i) => i !== index))
+  }
 
-  const updateExpense = (index: number, amount: number) => {
-    const newExpenses = [...expenses];
-    newExpenses[index].amount = amount;
-    setExpenses(newExpenses);
-  };
+  const updateExpense = (index, amount) => {
+    const newExpenses = [...expenses]
+    newExpenses[index].amount = amount
+    setExpenses(newExpenses)
+  }
 
   const calculateTotals = () => {
-    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
-    const totalOtherCharges = items.reduce(
-      (sum, item) => sum + (item.otherCharges || 0),
-      0
-    );
-    const totalExpenses = expenses.reduce(
-      (sum, expense) => sum + expense.amount ,
-      0
-    );
-    const commissionAmount = Commission || 0;
-
-    const totalCommission = items.reduce((sum, item) => {
-      const itemCommission = item.applyCommission ? commissionAmount : 0;
-      return sum + itemCommission;
-    }, 0);
-    const netAmount =
-      totalAmount + totalOtherCharges + totalExpenses + totalCommission;
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0)
+    const totalOtherCharges = items.reduce((sum, item) => sum + (item.otherCharges || 0), 0)
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+    const totalCommission = items.reduce((sum, item) => sum + (item.applyCommission ? Commission : 0), 0)
+    const netAmount = totalAmount + totalOtherCharges + totalExpenses + totalCommission
     return {
       totalAmount,
       totalOtherCharges,
       totalExpenses,
       totalCommission,
       netAmount,
-    };
-  };
+    }
+  }
 
-  const validateItems = (): boolean => {
+  const validateItems = () => {
     for (const item of items) {
       if (!item.item || item.item.trim() === "") {
-        alert("Please select a product for all items.");
-        return false;
+        alert("Please select a product for all items.")
+        return false
       }
     }
-    return true;
-  };
+    return true
+  }
 
   const generatePrintContent = async () => {
-    const { totalAmount, totalExpenses, netAmount, totalOtherCharges } =
-      calculateTotals();
+    const { totalAmount, totalExpenses, netAmount, totalOtherCharges } = calculateTotals()
 
-    let logoDataUrl = "";
+    let logoDataUrl = ""
     if (settings?.logo) {
       try {
-        const response = await fetch(settings.logo);
-        const blob = await response.blob();
+        const response = await fetch(settings.logo)
+        const blob = await response.blob()
         logoDataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(blob)
+        })
       } catch (error) {
-        console.error("Error loading logo:", error);
+        console.error("Error loading logo:", error)
       }
     }
 
@@ -253,11 +188,10 @@ export default function SalesBill() {
         </style>
       </head>
       <body>
-        ${
-          logoDataUrl
-            ? `<img src="${logoDataUrl}" alt="Business Logo" style="width: 100px; height: auto; display: block; margin-bottom: 10px;">`
-            : ""
-        }
+        ${logoDataUrl
+        ? `<img src="${logoDataUrl}" alt="Business Logo" style="width: 100px; height: auto; display: block; margin-bottom: 10px;">`
+        : ""
+      }
         <h1>Sales Bill</h1>
         <p><strong>Date:</strong> ${billDate}</p>
         <p><strong>Batch No:</strong> ${receiptNo}</p>
@@ -278,8 +212,8 @@ export default function SalesBill() {
           </thead>
           <tbody>
             ${items
-              .map(
-                (item, index) => `
+        .map(
+          (item, index) => `
               <tr>
                 <td>${index + 1}</td>
                 <td>${item.item}</td>
@@ -287,17 +221,12 @@ export default function SalesBill() {
                 <td>${item.weight}</td>
                 <td>₹${item.rate.toFixed(2)}</td>
                 <td>₹${item.amount.toFixed(2)}</td>
-                <td>${
-                  index < expenses.length
-                    ? `${expenses[index].type}: ₹${expenses[
-                        index
-                      ].amount.toFixed(2)}`
-                    : ""
-                }</td>
+                <td>${index < expenses.length ? `${expenses[index].type}: ₹${expenses[index].amount.toFixed(2)}` : ""
+            }</td>
               </tr>
-            `
-              )
-              .join("")}
+            `,
+        )
+        .join("")}
             <tr class="totals">
               <td colspan="5"></td>
               <td>Total Amount: ₹${totalAmount.toFixed(2)}</td>
@@ -320,80 +249,81 @@ export default function SalesBill() {
         </div>
       </body>
       </html>
-    `;
-  };
+    `
+  }
 
   const handlePrint = async () => {
-    if (!validateItems()) return;
-    const printWindow = window.open("", "_blank");
+    if (!validateItems()) return
+    const printWindow = window.open("", "_blank")
     if (printWindow) {
-      const content = await generatePrintContent();
-      printWindow.document.write(content);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
+      const content = await generatePrintContent()
+      printWindow.document.write(content)
+      printWindow.document.close()
+      printWindow.focus()
+      printWindow.print()
+      printWindow.close()
     } else {
-      alert("Please allow popups for this website to print the bill.");
+      alert("Please allow popups for this website to print the bill.")
     }
-  };
+  }
 
   const fetchNewBillNumbers = async () => {
     try {
-      const response = await getNewBillNumbers();
-      const data = response.data as BillNumbers;
-      setInvoiceNo(data.invoiceNo);
+      const response = await getNewBillNumbers()
+      const data = response.data
+      setInvoiceNo(data.invoiceNo)
     } catch (error) {
-      console.error("Error fetching new bill numbers:", error);
+      console.error("Error fetching new bill numbers:", error)
     }
-  };
+  }
 
-  type ErrorWithResponse = {
-    response?: {
-      status?: number;
-    };
-  };
 
-  const fetchBillDetails = async (receiptNo: string) => {
+
+  const fetchBillDetails = async (receiptNo) => {
     if (!receiptNo) {
-      alert("Please enter a receipt number.");
+      alert("Please enter a receipt number.")
     } else {
       try {
-        const response = await fetchBillByReceiptNo(receiptNo);
-
+        const response = await fetchBillByReceiptNo(receiptNo)
         if (response) {
-          setInvoiceNo(response.data.invoiceNo);
-          setCustomerDetails(response.data.customerDetails);
-          setItems(response.data.items);
-          setExpenses(response.data.expenses);
-          setBillDate(new Date(response.data.date).toISOString().split("T")[0]);
-          setPaymentType(response.data.paymentType);
-          setCommission(response.data.totalCommission);
+          setInvoiceNo(response.data.invoiceNo)
+          setCustomerDetails(response.data.customerDetails)
+          setItems(
+            response.data.items.map((item) => ({
+              ...item,
+              rate: Number(item.rate) - Commission, // Subtract the commission to get the original rate
+            })),
+          )
+          setExpenses(response.data.expenses)
+          setBillDate(new Date(response.data.date).toISOString().split("T")[0])
+          setPaymentType(response.data.paymentType)
         }
       } catch (error) {
-        console.error("Error fetching bill details:", error);
+        console.error("Error fetching bill details:", error)
 
-        if ((error as ErrorWithResponse).response?.status === 404) {
-          alert("Bill not found for the given receipt number.");
+        if ((error).response?.status === 404) {
+          alert("Bill not found for the given receipt number.")
         }
 
-        alert(
-          "Failed to fetch bill details. Please check the receipt number and try again."
-        );
+        alert("Failed to fetch bill details. Please check the receipt number and try again.")
       }
     }
-  };
-
+  }
+  const handleUpdateSettings = async (updatedSettings) => {
+    try {
+      const response = await updateSettings(updatedSettings)
+      const updatedData = response.data
+      setSettings((prevSettings) => ({ ...prevSettings, ...updatedData }))
+      return updatedData
+    } catch (err) {
+      console.error(err)
+      throw err
+    }
+  }
   const handleSave = async () => {
-    if (!validateItems()) return;
-    const {
-      totalAmount,
-      totalOtherCharges,
-      totalExpenses,
-      totalCommission,
-      netAmount,
-    } = calculateTotals();
-    const billData: BillData = {
+    if (!validateItems()) return
+    const { totalAmount, totalOtherCharges, totalExpenses, totalCommission, netAmount } = calculateTotals()
+    const billData = {
       type: "sales",
       receiptNo,
       invoiceNo,
@@ -407,14 +337,14 @@ export default function SalesBill() {
       totalCommission,
       netAmount,
       paymentType,
-    };
+    }
 
     try {
-      await createBill(billData);
+      await createBill(billData)
 
-      setReceiptNo("");
-      setInvoiceNo("");
-      setCustomerDetails("");
+      setReceiptNo("")
+      setInvoiceNo("")
+      setCustomerDetails("")
       setItems([
         {
           sr: 1,
@@ -426,40 +356,31 @@ export default function SalesBill() {
           otherCharges: 0,
           applyCommission: true,
         },
-      ]);
-      setExpenses([]);
-      setBillDate(new Date().toISOString().split("T")[0]);
-      setPaymentType("");
+      ])
+      setExpenses([])
+      setBillDate(new Date().toISOString().split("T")[0])
+      setPaymentType("")
 
-      fetchNewBillNumbers();
+      fetchNewBillNumbers()
 
-      alert("Invoice saved successfully!");
+      alert("Invoice saved successfully!")
     } catch (error) {
-      console.error("Error saving bill:", error);
+      console.error("Error saving bill:", error)
     }
-  };
+  }
 
-  const {
-    totalAmount,
-    totalOtherCharges,
-    totalExpenses,
-    totalCommission,
-    netAmount,
-  } = calculateTotals();
+  const { totalAmount, totalOtherCharges, totalExpenses, totalCommission, netAmount } = calculateTotals()
 
   if (!settings) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
     <Card className="w-full max-w-4xl mx-auto p-6 print:shadow-none">
-
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start space-y-4 sm:space-y-0 print:pb-0">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-24 h-24 border rounded-lg flex items-center justify-center print:border-black">
-            {business?.logo && (
-              <Image src={business.logo} alt="Logo" height={100} width={100} />
-            )}
+            {business?.logo && <Image src={business.logo || "/placeholder.svg"} alt="Logo" height={100} width={100} />}
           </div>
           <div className="space-y-2">
             <p className="font-bold">{business?.name}</p>
@@ -469,9 +390,7 @@ export default function SalesBill() {
           </div>
         </div>
         <div className="space-y-2 w-full sm:w-auto">
-          <CardTitle className="text-2xl font-bold text-center">
-            Sales Bill
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Sales Bill</CardTitle>
           <Input
             type="date"
             value={billDate}
@@ -483,46 +402,55 @@ export default function SalesBill() {
 
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Input
-            value={receiptNo}
-            onChange={(e) => setReceiptNo(e.target.value)}
-            placeholder="Batch No"
-            className="print:border-none"
-          />
-          <Button onClick={() => fetchBillDetails(receiptNo)}>Fetch</Button>
-          <Input
-            value={invoiceNo}
-            readOnly
-            placeholder="Invoice No"
-            className="print:border-none"
-          />
+          <Card className="col-span-2 p-4">
+            <div className="flex space-x-2">
+              <Input
+                value={receiptNo}
+                onChange={(e) => setReceiptNo(e.target.value)}
+                placeholder="Batch No"
+                className="print:border-none"
+              />
+              <Button onClick={() => fetchBillDetails(receiptNo)}>Fetch</Button>
+            </div>
+          </Card>
+          <Input value={invoiceNo} readOnly placeholder="Invoice No" className="print:border-none" />
         </div>
 
         <div className="space-y-2">
           <h2 className="font-semibold">Customer Details</h2>
-          <Select
-            onValueChange={(value) => {
-              const selectedCustomer = settings.customers.find(
-                (c) => c.name === value
-              );
-              if (selectedCustomer) {
-                setCustomerDetails(
-                  `${selectedCustomer.name}, ${selectedCustomer.address}, ${selectedCustomer.phone}`
-                );
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a customer" />
-            </SelectTrigger>
-            <SelectContent>
-              {settings.customers.map((customer, index) => (
-                <SelectItem key={index} value={customer.name}>
-                  {customer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center space-x-2">
+            <Select
+              onValueChange={(value) => {
+                const selectedCustomer = settings.customers.find((c) => c.name === value)
+                if (selectedCustomer) {
+                  setCustomerDetails(`${selectedCustomer.name}, ${selectedCustomer.address}, ${selectedCustomer.phone}`)
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {settings.customers.map((customer, index) => (
+                  <SelectItem key={index} value={customer.name}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Add Customer</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add Customer</DialogTitle>
+                  <DialogDescription>Add a new customer to your list.</DialogDescription>
+                </DialogHeader>
+                <CustomerSettings settings={settings} onUpdate={handleUpdateSettings} />
+              </DialogContent>
+            </Dialog>
+          </div>
           <Input
             value={customerDetails}
             onChange={(e) => setCustomerDetails(e.target.value)}
@@ -533,13 +461,24 @@ export default function SalesBill() {
 
         <div className="overflow-x-auto">
           <Table className="w-full">
-        <label htmlFor="commission">Comission</label>
-      <Input
-        type="number"
-        id="commission"
-        value={Commission}
-        onChange={(e) => setCommission(Number(e.target.value))}
-      />
+            <label htmlFor="commission">Commission</label>
+            <Input
+              type="number"
+              id="commission"
+              value={Commission}
+              onChange={(e) => {
+                const newCommission = Number(e.target.value)
+                setCommission(newCommission)
+                // Update all item rates when commission changes
+                setItems((prevItems) =>
+                  prevItems.map((item) => ({
+                    ...item,
+                    rate: Number(item.rate) + newCommission - Commission,
+                    amount: item.bags * (Number(item.rate) + newCommission - Commission),
+                  })),
+                )
+              }}
+            />
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Sr</TableHead>
@@ -560,15 +499,13 @@ export default function SalesBill() {
                     <Select
                       value={item.item}
                       onValueChange={(value) => {
-                        const selectedProduct = settings?.products.find(
-                          (p) => p.name === value
-                        );
+                        const selectedProduct = settings?.products.find((p) => p.name === value)
                         if (selectedProduct) {
-                          updateItem(index, "item", selectedProduct.name);
-                          updateItem(index, "rate", selectedProduct.price + Commission);
+                          updateItem(index, "item", selectedProduct.name)
+                          updateItem(index, "rate", selectedProduct.price + Commission)
                           // Recalculate the amount
-                          const newAmount = item.bags * selectedProduct.price;
-                          updateItem(index, "amount", newAmount);
+                          const newAmount = item.bags * selectedProduct.price
+                          updateItem(index, "amount", newAmount)
                         }
                       }}
                     >
@@ -588,9 +525,7 @@ export default function SalesBill() {
                     <Input
                       type="number"
                       value={item.bags}
-                      onChange={(e) =>
-                        updateItem(index, "bags", Number(e.target.value))
-                      }
+                      onChange={(e) => updateItem(index, "bags", Number(e.target.value))}
                       className="w-20 print:border-none"
                     />
                   </TableCell>
@@ -598,9 +533,7 @@ export default function SalesBill() {
                     <Input
                       type="number"
                       value={item.weight}
-                      onChange={(e) =>
-                        updateItem(index, "weight", Number(e.target.value))
-                      }
+                      onChange={(e) => updateItem(index, "weight", Number(e.target.value))}
                       className="w-24 print:border-none"
                     />
                   </TableCell>
@@ -608,34 +541,26 @@ export default function SalesBill() {
                     <Input
                       type="number"
                       value={item.rate}
-                      onChange={(e) =>
-                        updateItem(index, "rate", Number(e.target.value))
-                      }
+                      onChange={(e) => {
+                        const newRate = Number(e.target.value)
+                        updateItem(index, "rate", newRate)
+                        updateItem(index, "amount", item.bags * newRate)
+                      }}
                       className="w-24 print:border-none"
                     />
                   </TableCell>
-                  <TableCell>₹{item.amount.toFixed(2)}</TableCell>
+                  <TableCell>₹{(item.amount + (item.applyCommission ? Commission : 0)).toFixed(2)}</TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       value={item.otherCharges}
-                      onChange={(e) =>
-                        updateItem(
-                          index,
-                          "otherCharges",
-                          Number(e.target.value)
-                        )
-                      }
+                      onChange={(e) => updateItem(index, "otherCharges", Number(e.target.value))}
                       className="w-24 print:border-none"
                     />
                   </TableCell>
 
                   <TableCell className="print:hidden">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(index)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -666,9 +591,7 @@ export default function SalesBill() {
                     <Input
                       type="number"
                       value={expense.amount}
-                      onChange={(e) =>
-                        updateExpense(index, Number(e.target.value))
-                      }
+                      onChange={(e) => updateExpense(index, Number(e.target.value))}
                       className="w-24 print:border-none"
                     />
                   </TableCell>
@@ -705,9 +628,7 @@ export default function SalesBill() {
             <p>Other Charges: ₹{totalOtherCharges.toFixed(2)}</p>
             <p>Total Expenses: ₹{totalExpenses.toFixed(2)}</p>
             <p>Commission: ₹{totalCommission.toFixed(2)}</p>
-            <p className="text-lg font-bold">
-              Net Amount: ₹{netAmount.toFixed(2)}
-            </p>
+            <p className="text-lg font-bold">Net Amount: ₹{netAmount.toFixed(2)}</p>
           </div>
         </div>
 
@@ -719,5 +640,5 @@ export default function SalesBill() {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

@@ -1,13 +1,11 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PurchaseBill from "@/components/purchase-bill";
 import SalesBill from "@/components/sales-bill";
 import { useRouter } from "next/navigation";
-
 export default function Home() {
-  const [billType, setBillType] = useState<"purchase" | "sales">("purchase");
+  const [billType, setBillType] = useState<"purchase" | "sales">("sales");
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -28,7 +26,6 @@ export default function Home() {
     localStorage.removeItem("token");
     router.push("/auth/login");
   };
-
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <Button onClick={handleLogout}>Logout</Button>
