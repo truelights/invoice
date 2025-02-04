@@ -21,7 +21,6 @@ import {
 import { getBills } from "@/utils/api";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import { DateRange } from "react-day-picker";
 import {
   Drawer,
   DrawerContent,
@@ -34,54 +33,13 @@ import { Button } from "@/components/ui/button";
 
 dayjs.extend(isBetween);
 
-interface Bill {
-  _id: string;
-  type: "purchase" | "sales";
-  receiptNo: string;
-  invoiceNo: string;
-  date: string;
-  vendorDetails?: string;
-  customerDetails?: string;
-  items: {
-    item: string;
-    bags: number;
-    weight: number;
-    amount: number;
-    rate?: number;
-    otherCharges?: number;
-    applyCommission?: boolean;
-  }[];
-  expenses: {
-    type: string;
-    amount: number;
-  }[];
-  recievedAmount: number;
-  totalAmount: number;
-  totalExpense: number;
-  netAmount: number;
-  paymentType: string;
-}
 
-interface Totals {
-  totalAmount: number;
-  totalExpense: number;
-  netAmount: number;
-  recievedAmount: number;
-}
-
-interface ReportTableProps {
-  bills: Bill[];
-  totals: Totals;
-  type: "purchase" | "sales";
-  onRowClick: (bill: Bill) => void;
-}
-
-const ReportsPage: React.FC = () => {
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [activeTab, setActiveTab] = useState<"purchase" | "sales">("purchase");
-  const [dateFilter, setDateFilter] = useState<string>("today");
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+const ReportsPage = () => {
+  const [bills, setBills] = useState([]);
+  const [dateRange, setDateRange] = useState();
+  const [activeTab, setActiveTab] = useState("purchase");
+  const [dateFilter, setDateFilter] = useState("today");
+  const [selectedBill, setSelectedBill] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   console.log(bills);
 
@@ -141,7 +99,7 @@ const ReportsPage: React.FC = () => {
   }, [bills, activeTab, dateFilter, dateRange]);
 
   const totals = useMemo(() => {
-    return filteredBills.reduce<Totals>(
+    return filteredBills.reduce(
       (acc, bill) => {
         acc.totalAmount += bill.totalAmount;
         acc.totalExpense += bill.totalExpense;
@@ -153,7 +111,7 @@ const ReportsPage: React.FC = () => {
     );
   }, [filteredBills]);
 
-  const handleRowClick = (bill: Bill) => {
+  const handleRowClick = (bill) => {
     setSelectedBill(bill);
     setIsDrawerOpen(true);
   };
@@ -163,7 +121,7 @@ const ReportsPage: React.FC = () => {
       <h1 className="text-3xl font-bold mb-6">Reports</h1>
       <Tabs
         defaultValue="purchase"
-        onValueChange={(value) => setActiveTab(value as "purchase" | "sales")}
+        onValueChange={(value) => setActiveTab(value)}
       >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="purchase">Purchase</TabsTrigger>
@@ -220,7 +178,7 @@ const ReportsPage: React.FC = () => {
   );
 };
 
-const ReportTable: React.FC<ReportTableProps> = ({
+const ReportTable = ({
   bills,
   totals,
   type,
