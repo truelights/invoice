@@ -8,6 +8,7 @@ import { ExpenseSettings } from "@/components/settings/expense-settings";
 import ProductSettings from "@/components/settings/product-settings";
 import { CustomerSettings } from "@/components/settings/customer-settings";
 import { VendorSettings } from "@/components/settings/vendor-settings";
+import { Button } from "@/components/ui/button";
 
 
 export default function SettingsPage() {
@@ -49,10 +50,15 @@ export default function SettingsPage() {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!settings) return <div>No settings found</div>;
-
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/auth/login");
+  };
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Settings</h1>
+      <Button onClick={handleLogout}>Logout</Button>
+
       <Tabs defaultValue="company">
       <TabsList className="grid grid-cols-5 gap-4 mb-4">
       <TabsTrigger value="company">Company</TabsTrigger>

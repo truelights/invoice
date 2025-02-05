@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -19,7 +18,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-
 export default function SalesBill() {
   const { settings: initialSettings } = useSettings()
   const [settings, setSettings] = useState(null)
@@ -43,7 +41,6 @@ export default function SalesBill() {
   const [expenses, setExpenses] = useState([])
   const [billDate, setBillDate] = useState(new Date().toISOString().split("T")[0])
   const [Commission, setCommission] = useState(0)
-
   useEffect(() => {
     if (initialSettings) {
       setSettings(initialSettings)
@@ -58,7 +55,6 @@ export default function SalesBill() {
       fetchNewBillNumbers()
     }
   }, [initialSettings])
-
   const addItem = () => {
     setItems([
       ...items,
@@ -74,7 +70,6 @@ export default function SalesBill() {
       },
     ])
   }
-
   const updateItem = (index, field, value) => {
     setItems((prevItems) => {
       const newItems = [...prevItems]
@@ -86,36 +81,31 @@ export default function SalesBill() {
         const rate = Number(newItems[index].rate)
         const bags = Number(newItems[index].bags)
         newItems[index].amount = bags * rate
+        newItems[index].amountWithCommission = newItems[index].amount + Commission * bags
       }
       return newItems
     })
   }
-
   const removeItem = (index) => {
     setItems(items.filter((_, i) => i !== index))
   }
-
   const updateExpense = (index, amount) => {
     const newExpenses = [...expenses]
     newExpenses[index].amount = amount
     setExpenses(newExpenses)
   }
-
   const calculateTotals = () => {
-    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0)
+    const totalAmount = items.reduce((sum, item) => sum + (item.amount), 0)
     const totalOtherCharges = items.reduce((sum, item) => sum + (item.otherCharges || 0), 0)
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-    const totalCommission = items.reduce((sum, item) => sum + (item.applyCommission ? Commission : 0), 0)
-    const netAmount = totalAmount + totalOtherCharges + totalExpenses + totalCommission
+    const netAmount = totalAmount + totalOtherCharges + totalExpenses
     return {
       totalAmount,
       totalOtherCharges,
       totalExpenses,
-      totalCommission,
       netAmount,
     }
   }
-
   const validateItems = () => {
     for (const item of items) {
       if (!item.item || item.item.trim() === "") {
@@ -125,10 +115,8 @@ export default function SalesBill() {
     }
     return true
   }
-
   const generatePrintContent = async () => {
     const { totalAmount, totalExpenses, netAmount, totalOtherCharges } = calculateTotals()
-
     let logoDataUrl = ""
     if (settings?.logo) {
       try {
@@ -143,7 +131,6 @@ export default function SalesBill() {
         console.error("Error loading logo:", error)
       }
     }
-
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -197,7 +184,6 @@ export default function SalesBill() {
         <p><strong>Batch No:</strong> ${receiptNo}</p>
         <p><strong>Receipt No:</strong> ${invoiceNo}</p>
         <p><strong>Customer Details:</strong> ${customerDetails}</p>
-
         <table>
           <thead>
             <tr>
@@ -235,7 +221,6 @@ export default function SalesBill() {
             <tr class="totals">
               <td colspan="5"></td>
               <td>Other Charges: ₹${totalOtherCharges.toFixed(2)}</td>
-
             </tr>
             <tr class="totals">
               <td colspan="5"></td>
@@ -243,7 +228,6 @@ export default function SalesBill() {
             </tr>
           </tbody>
         </table>
-
         <div class="signature">
           <p>Authorized Signature: _______________________</p>
         </div>
@@ -251,7 +235,6 @@ export default function SalesBill() {
       </html>
     `
   }
-
   const handlePrint = async () => {
     if (!validateItems()) return
     const printWindow = window.open("", "_blank")
@@ -266,7 +249,6 @@ export default function SalesBill() {
       alert("Please allow popups for this website to print the bill.")
     }
   }
-
   const fetchNewBillNumbers = async () => {
     try {
       const response = await getNewBillNumbers()
@@ -276,39 +258,50 @@ export default function SalesBill() {
       console.error("Error fetching new bill numbers:", error)
     }
   }
-
-
-
   const fetchBillDetails = async (receiptNo) => {
     if (!receiptNo) {
-      alert("Please enter a receipt number.")
-    } else {
-      try {
-        const response = await fetchBillByReceiptNo(receiptNo)
-        if (response) {
-          setInvoiceNo(response.data.invoiceNo)
-          setCustomerDetails(response.data.customerDetails)
-          setItems(
-            response.data.items.map((item) => ({
-              ...item,
-              rate: Number(item.rate) - Commission, // Subtract the commission to get the original rate
-            })),
-          )
-          setExpenses(response.data.expenses)
-          setBillDate(new Date(response.data.date).toISOString().split("T")[0])
-          setPaymentType(response.data.paymentType)
-        }
-      } catch (error) {
-        console.error("Error fetching bill details:", error)
-
-        if ((error).response?.status === 404) {
-          alert("Bill not found for the given receipt number.")
-        }
-
-        alert("Failed to fetch bill details. Please check the receipt number and try again.")
-      }
+      alert("Please enter a receipt number.");
+      return;
     }
-  }
+    try {
+      const response = await fetchBillByReceiptNo(receiptNo);
+      console.log(response.data);
+
+      if (response) {
+        setItems(
+          response.data.items.map((item) => {
+            if (!settings?.products) {
+              console.warn("settings.products is undefined or empty");
+              return { ...item }; // Return unchanged item
+            }
+            const FetchedProduct = settings.products.find((p) => p.name === item.item); // Corrected property name
+            console.log(FetchedProduct);
+
+            if (FetchedProduct) {
+              const newRate = FetchedProduct.price + Commission;
+              const newAmount = item.bags * newRate;
+              return {
+                ...item,
+                rate: newRate,
+                amount: newAmount,
+                amountWithCommission: newAmount + Commission * item.bags,
+              };
+            }
+            return { ...item };
+          })
+        );
+        setExpenses(response.data.expenses);
+        setBillDate(new Date(response.data.date).toISOString().split("T")[0]);
+        setPaymentType(response.data.paymentType);
+      }
+    } catch (error) {
+      console.error("Error fetching bill details:", error);
+      if (error.response?.status === 404) {
+        alert("Bill not found for the given receipt number.");
+      }
+      alert("Failed to fetch bill details. Please check the receipt number and try again.");
+    }
+  };
   const handleUpdateSettings = async (updatedSettings) => {
     try {
       const response = await updateSettings(updatedSettings)
@@ -322,7 +315,7 @@ export default function SalesBill() {
   }
   const handleSave = async () => {
     if (!validateItems()) return
-    const { totalAmount, totalOtherCharges, totalExpenses, totalCommission, netAmount } = calculateTotals()
+    const { totalAmount, totalOtherCharges, totalExpenses, netAmount } = calculateTotals()
     const billData = {
       type: "sales",
       receiptNo,
@@ -334,14 +327,11 @@ export default function SalesBill() {
       totalAmount,
       totalOtherCharges,
       totalExpense: totalExpenses,
-      totalCommission,
       netAmount,
       paymentType,
     }
-
     try {
       await createBill(billData)
-
       setReceiptNo("")
       setInvoiceNo("")
       setCustomerDetails("")
@@ -360,23 +350,18 @@ export default function SalesBill() {
       setExpenses([])
       setBillDate(new Date().toISOString().split("T")[0])
       setPaymentType("")
-
       fetchNewBillNumbers()
-
       alert("Invoice saved successfully!")
     } catch (error) {
       console.error("Error saving bill:", error)
     }
   }
-
-  const { totalAmount, totalOtherCharges, totalExpenses, totalCommission, netAmount } = calculateTotals()
-
+  const { totalAmount, totalOtherCharges, totalExpenses, netAmount } = calculateTotals()
   if (!settings) {
     return <div>Loading...</div>
   }
-
   return (
-    <Card className="w-full max-w-4xl mx-auto p-6 print:shadow-none">
+    <Card className="mx-auto p-6 print:shadow-none">
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start space-y-4 sm:space-y-0 print:pb-0">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-24 h-24 border rounded-lg flex items-center justify-center print:border-black">
@@ -399,7 +384,6 @@ export default function SalesBill() {
           />
         </div>
       </CardHeader>
-
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="col-span-2 p-4">
@@ -415,7 +399,6 @@ export default function SalesBill() {
           </Card>
           <Input value={invoiceNo} readOnly placeholder="Invoice No" className="print:border-none" />
         </div>
-
         <div className="space-y-2">
           <h2 className="font-semibold">Customer Details</h2>
           <div className="flex items-center space-x-2">
@@ -458,7 +441,6 @@ export default function SalesBill() {
             className="print:border-none"
           />
         </div>
-
         <div className="overflow-x-auto">
           <Table className="w-full">
             <label htmlFor="commission">Commission</label>
@@ -469,12 +451,10 @@ export default function SalesBill() {
               onChange={(e) => {
                 const newCommission = Number(e.target.value)
                 setCommission(newCommission)
-                // Update all item rates when commission changes
                 setItems((prevItems) =>
                   prevItems.map((item) => ({
                     ...item,
-                    rate: Number(item.rate) + newCommission - Commission,
-                    amount: item.bags * (Number(item.rate) + newCommission - Commission),
+                    amountWithCommission: item.amount + newCommission * item.bags,
                   })),
                 )
               }}
@@ -503,7 +483,6 @@ export default function SalesBill() {
                         if (selectedProduct) {
                           updateItem(index, "item", selectedProduct.name)
                           updateItem(index, "rate", selectedProduct.price + Commission)
-                          // Recalculate the amount
                           const newAmount = item.bags * selectedProduct.price
                           updateItem(index, "amount", newAmount)
                         }
@@ -549,7 +528,9 @@ export default function SalesBill() {
                       className="w-24 print:border-none"
                     />
                   </TableCell>
-                  <TableCell>₹{(item.amount + (item.applyCommission ? Commission : 0)).toFixed(2)}</TableCell>
+                  <TableCell>
+                    ₹{item.amount.toFixed(2)}
+                  </TableCell>
                   <TableCell>
                     <Input
                       type="number"
@@ -558,7 +539,6 @@ export default function SalesBill() {
                       className="w-24 print:border-none"
                     />
                   </TableCell>
-
                   <TableCell className="print:hidden">
                     <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
                       <Trash2 className="h-4 w-4" />
@@ -569,11 +549,9 @@ export default function SalesBill() {
             </TableBody>
           </Table>
         </div>
-
         <Button onClick={addItem} className="print:hidden">
           <Plus className="mr-2 h-4 w-4" /> Add Item
         </Button>
-
         <div className="mt-4">
           <h3 className="font-semibold mb-2">Invoice Expenses</h3>
           <Table>
@@ -600,7 +578,6 @@ export default function SalesBill() {
             </TableBody>
           </Table>
         </div>
-
         <div className="flex flex-col sm:flex-row justify-between items-start pt-4 border-t">
           <div className="space-y-2 w-full sm:w-auto">
             <label htmlFor="paymentType" className="block">
@@ -618,7 +595,6 @@ export default function SalesBill() {
                 <SelectItem value="others">Others</SelectItem>
               </SelectContent>
             </Select>
-
             <div className="w-48 h-24 border rounded p-2 text-center print:border-black">
               <p className="mb-8">Space for sign</p>
             </div>
@@ -627,11 +603,9 @@ export default function SalesBill() {
             <p>Total Amount: ₹{totalAmount.toFixed(2)}</p>
             <p>Other Charges: ₹{totalOtherCharges.toFixed(2)}</p>
             <p>Total Expenses: ₹{totalExpenses.toFixed(2)}</p>
-            <p>Commission: ₹{totalCommission.toFixed(2)}</p>
             <p className="text-lg font-bold">Net Amount: ₹{netAmount.toFixed(2)}</p>
           </div>
         </div>
-
         <div className="flex justify-between print:hidden">
           <Button onClick={handleSave}>Save Bill</Button>
           <Button onClick={handlePrint}>
