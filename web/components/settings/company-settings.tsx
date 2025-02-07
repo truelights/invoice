@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { z } from "zod";
 import Image from "next/image";
-
 // Define Zod schema for validation
 const companySchema = z.object({
   name: z.string().nonempty("Company name is required."),
@@ -17,19 +16,15 @@ const companySchema = z.object({
   planExpiry: z.string().optional(),
   verified: z.boolean().optional(),
 });
-
 type Settings = z.infer<typeof companySchema>;
-
 type CompanySettingsProps = {
   settings: Settings;
   onUpdate: (updatedSettings: Partial<Settings>) => Promise<Settings>;
 };
-
 export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
   const [formData, setFormData] = useState<Settings>(settings);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -37,10 +32,8 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
       [name]: name === "commission" ? parseFloat(value) || 0 : value,
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       companySchema.parse(formData);
       setError(null);
@@ -54,19 +47,16 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
       setLoading(false);
     }
   };
-
   return (
     <Card className=" mx-auto p-6 shadow-lg rounded-2xl">
       <CardContent>
         <h2 className="text-xl font-semibold mb-4">Company Settings</h2>
-
         {/* Display Error Message */}
         {error && (
           <Alert className="mb-4" variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
         {/* Display Plan Expiry & Verification Status */}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600">
@@ -76,36 +66,30 @@ export function CompanySettings({ settings, onUpdate }: CompanySettingsProps) {
             {formData.verified ? "Verified" : "Not Verified"}
           </span>
         </div>
-
         {/* Display Company Logo */}
         {formData.logo && (
           <div className="flex justify-center mb-4">
             <Image src={formData.logo} alt="Company Logo" height={80} width={80} className="rounded-lg shadow-md object-cover" />
           </div>
         )}
-
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">Company Name</Label>
             <Input id="name" name="name" value={formData.name} onChange={handleChange} />
           </div>
-
           <div>
             <Label htmlFor="address">Address</Label>
             <Input id="address" name="address" value={formData.address} onChange={handleChange} />
           </div>
-
           <div>
             <Label htmlFor="phone">Phone</Label>
             <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} />
           </div>
-
           <div>
             <Label htmlFor="commission">Commission</Label>
             <Input id="commission" name="commission" type="number" value={formData.commission} onChange={handleChange} />
           </div>
-
           {/* Submit Button */}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Updating..." : "Update Company Settings"}

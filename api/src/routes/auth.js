@@ -1,27 +1,38 @@
 import express from "express";
-import Business, { Plan } from "../models/Business.js";
-import User from "../models/User.js";
+import crypto from "crypto";
+import Razorpay from "razorpay";
 import jwt from "jsonwebtoken";
+import { validationResult } from "express-validator";
 import { upload } from "../middleware/multer.middleware.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import Razorpay from "razorpay";
-import cron from "node-cron";
+import { auth } from "../middleware/auth.js";
+import Business, { Plan } from "../models/Business.js";
+import User from "../models/User.js";
 import Plantransactions from "../models/plantransactions.js";
-import { body, validationResult } from "express-validator";
+import cron from "node-cron";
 
 const router = express.Router();
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Function to verify Razorpay Payment Signature
+const verifyPayment = (orderId, paymentId, signature) => {
+  const generatedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  return generatedSignature === signature;
+};
+
+// Cron Job: Expire businesses with outdated plans
 cron.schedule("0 0 * * *", async () => {
   try {
     const now = new Date();
-
-    const expiredBusinesses = await Business.find({
-      planExpiry: { $lt: now },
-    });
+    const expiredBusinesses = await Business.find({ planExpiry: { $lt: now } });
 
     for (const business of expiredBusinesses) {
       business.plan = null;
@@ -30,34 +41,27 @@ cron.schedule("0 0 * * *", async () => {
       await business.save();
     }
   } catch (error) {
-    console.error("Error in cron job for expired plans:", error.message);
+    console.error("Error in cron job for expired plans:", error);
   }
 });
 
-router.post("/renew-plan", async (req, res) => {
+// Renew Plan
+router.post("/renew-plan", auth, async (req, res) => {
   try {
-    const { businessId, planId, paymentId } = req.body;
+    const { planId, paymentId } = req.body;
+    const businessId = req.businessId;
 
     const plan = await Plan.findById(planId);
-    if (!plan) {
-      return res.status(400).json({ message: "Invalid plan selected" });
-    }
+    if (!plan) return res.status(400).json({ message: "Invalid plan selected" });
 
     const business = await Business.findById(businessId);
-    if (!business) {
-      return res.status(404).json({ message: "Business not found" });
-    }
+    if (!business) return res.status(404).json({ message: "Business not found" });
 
     const payment = await razorpay.payments.fetch(paymentId);
-
-    if (!payment || payment.status !== "captured") {
-      return res.status(400).json({ message: "Payment verification failed" });
-    }
+    if (payment.status !== "captured") return res.status(400).json({ message: "Payment not successful" });
 
     if (payment.amount !== plan.price * 100) {
-      return res
-        .status(400)
-        .json({ message: "Payment amount does not match plan price" });
+      return res.status(400).json({ message: "Payment amount does not match plan price" });
     }
 
     const transaction = new Plantransactions({
@@ -71,61 +75,36 @@ router.post("/renew-plan", async (req, res) => {
     await transaction.save();
 
     business.plan = planId;
-    business.planExpiry = new Date(
-      Date.now() + plan.duration * 24 * 60 * 60 * 1000
-    );
+    business.planExpiry = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000);
     business.verified = true;
-
     await business.save();
 
     res.json({ message: "Plan renewed successfully", business, transaction });
   } catch (error) {
-    console.error("Error renewing plan:", error.message);
-    res.status(500).send("Server error");
+    console.error("Error renewing plan:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
+// Business Registration with Payment Handling
 router.post("/register", upload.single("logo"), async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const {
-      email,
-      password,
-      businessName,
-      gst,
-      address,
-      phone,
-      planId,
-      paymentId,
-      orderId,
-      signature,
-    } = req.body;
+    const { email, password, businessName, gst, address, phone, planId, paymentId, orderId, signature } = req.body;
 
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    if (await User.findOne({ email })) return res.status(400).json({ message: "User already exists" });
 
     const plan = await Plan.findById(planId);
-    if (!plan) {
-      return res.status(400).json({ message: "Invalid plan selected" });
+    if (!plan) return res.status(400).json({ message: "Invalid plan selected" });
+
+    if (plan.price > 0 && (!paymentId || !orderId || !signature)) {
+      return res.status(400).json({ message: "Payment details missing" });
     }
 
-    if (plan.price > 0) {
-      if (!paymentId || !orderId || !signature) {
-        return res
-          .status(400)
-          .json({ message: "Payment information missing for paid plan" });
-      }
-
-      const isPaymentValid = await verifyPayment(orderId, paymentId, signature);
-      if (!isPaymentValid) {
-        return res.status(400).json({ message: "Payment verification failed" });
-      }
+    if (plan.price > 0 && !verifyPayment(orderId, paymentId, signature)) {
+      return res.status(400).json({ message: "Payment verification failed" });
     }
 
     let logoUrl = null;
@@ -134,154 +113,89 @@ router.post("/register", upload.single("logo"), async (req, res) => {
       logoUrl = uploadResult.secure_url;
     }
 
-    let transaction = null;
-
-    if (planId && paymentId) {
-      const payment = await razorpay.payments.fetch(paymentId);
-      if (payment.status !== "captured") {
-        return res.status(400).json({ message: "Payment not successful" });
-      }
-
-      const plan = await Plan.findById(planId);
-      if (!plan) {
-        return res.status(400).json({ message: "Invalid plan selected" });
-      }
-
-      transaction = new Plantransactions({
-        amount: plan.price,
-        paymentMethod: payment.method || "Unknown",
-        business: null, // Temporary, will be updated after business creation
-        plan: planId,
-        status: "Completed",
-      });
-
-      await transaction.save();
-    }
-
     const business = new Business({
       name: businessName || "sample",
       gst: gst || "GST000000",
       address: address || "Sample Address",
       phone: phone || "000-000-0000",
       logo: logoUrl,
-      expenseLabels: ["Sample Expense"],
-      products: [{ name: "Sample Product", price: 100 }],
-      customers: [
-        {
-          name: "Sample Customer",
-          address: "Sample Address",
-          phone: "123-456-7890",
-        },
-      ],
-      vendors: [
-        {
-          name: "Sample Vendor",
-          address: "Sample Vendor Address",
-          phone: "112-233-4455",
-        },
-      ],
       verified: true,
-      lastReceiptNumber: 0,
-      lastReceiptDate: new Date().toISOString().split("T")[0],
-      lastInvoiceNumber: 0,
-      plan: plan ? plan._id : null,
-      planExpiry: plan
-        ? new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000)
-        : null,
+      plan: plan._id,
+      planExpiry: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
     });
 
     await business.save();
 
-    if (transaction) {
-      transaction.business = business._id;
-      await transaction.save();
-    }
-
-    user = new User({
-      email,
-      password,
-      businessId: business._id,
+    const transaction = new Plantransactions({
+      amount: plan.price,
+      paymentMethod: "Online",
+      business: business._id,
+      plan: planId,
+      status: "Completed",
     });
+
+    await transaction.save();
+
+    const user = new User({ email, password, businessId: business._id });
     await user.save();
 
-    const payload = {
-      user: {
-        id: user.id,
-        businessId: business._id,
-      },
-    };
-
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token, transaction });
-      }
-    );
+    jwt.sign({ user: { id: user.id, businessId: business._id } }, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+      if (err) throw err;
+      res.json({ token, transaction });
+    });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    console.error("Error in registration:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
+// User Login with Plan Expiry Check
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
 
-    const isMatch = await user.comparePassword(password);
-
-    if (!isMatch) {
+    if (!user || !(await user.comparePassword(password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const business = await Business.findById(user.businessId);
-    if (
-      !business ||
-      !business.plan ||
-      !business.planExpiry ||
-      new Date() > new Date(business.planExpiry)
-    ) {
-      return res.status(403).json({
-        message: "Plan expired or not active. Please renew to continue.",
-      });
+    if (!business || !business.plan || new Date() > new Date(business.planExpiry)) {
+      business.plan = null;
+      business.planExpiry = null;
+      business.verified = false;
+      await business.save();
+      return res.status(403).json({ message: "Plan expired. Please renew to continue." });
     }
 
-    const payload = {
-      user: {
-        id: user.id,
-        businessId: user.businessId,
-      },
-    };
-
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "365d" },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
+    jwt.sign({ user: { id: user.id, businessId: user.businessId } }, process.env.JWT_SECRET, { expiresIn: "365d" }, (err, token) => {
+      if (err) throw err;
+      res.json({ token });
+    });
   } catch (err) {
-    console.error("Error in login:", err.message);
-    res.status(500).send("Server error");
+    console.error("Error in login:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-router.get("/plans", async (req, res) => {
+// Razorpay Webhook for Payment Confirmation
+router.post("/razorpay-webhook", async (req, res) => {
   try {
-    const plans = await Plan.find();
-    res.json(plans);
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const shasum = crypto.createHmac("sha256", secret).update(JSON.stringify(req.body)).digest("hex");
+
+    if (shasum !== req.headers["x-razorpay-signature"]) {
+      return res.status(400).json({ message: "Invalid webhook signature" });
+    }
+
+    if (req.body.event === "payment.captured") {
+      console.log("Payment captured:", req.body.payload.payment.entity.id);
+    }
+
+    res.json({ status: "success" });
   } catch (error) {
-    console.error("Error fetching plans:", error.message);
-    res.status(500).send("Server error");
+    console.error("Error in webhook:", error);
+    res.status(500).json({ message: "Webhook error", error: error.message });
   }
 });
 
