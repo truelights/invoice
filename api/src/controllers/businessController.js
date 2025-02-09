@@ -42,13 +42,15 @@ export const updateBusinessInfo = async (req, res) => {
 export const changePlan = async (req, res) => {
   try {
     const { planId } = req.body;
+    console.log(planId);
+
     const plan = await Plan.findById(planId);
     if (!plan) {
       return res.status(404).json({ message: "Plan not found" });
     }
 
     const updatedBusiness = await Business.findByIdAndUpdate(
-      req.business._id,
+      req.params.business,
       {
         plan: planId,
         planExpiry: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),

@@ -83,7 +83,7 @@ export const register = async (
 };
 
 export const getBusinessInfo = async (): Promise<Business | Business[]> => {
-  const response = await axios.get(`${API_URL}/business`);
+  const response = await api.get(`${API_URL}/business`);
   return response.data;
 };
 
@@ -102,7 +102,7 @@ export const updateBusinessInfo = async (
   business: Business,
   id: string
 ): Promise<Business> => {
-  const response = await axios.put(`${API_URL}/business/${id}`, business);
+  const response = await api.put(`${API_URL}/business/${id}`, business);
   return response.data;
 };
 
@@ -110,8 +110,8 @@ export const changePlan = async (
   planId: string,
   newPlan: Plan
 ): Promise<Plan> => {
-  const response = await api.post<Plan>(`/business/change-plan/${planId}`, {
-    newPlan,
+  const response = await api.put<Plan>(`/business/change-plan/${planId}`, {
+    planId: newPlan,
   });
   return response.data;
 };

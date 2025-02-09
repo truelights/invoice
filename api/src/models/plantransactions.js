@@ -18,7 +18,7 @@ const Plantransactions = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["Credit Card", "Debit Card", "PayPal", "Bank Transfer"],
+    enum: ["Razorpay", "Debit Card", "PayPal", "Bank Transfer"],
     required: true,
   },
   transactionDate: {

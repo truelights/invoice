@@ -107,7 +107,7 @@ export default function Register() {
     const fetchPlans = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/plans`
+          `${process.env.NEXT_PUBLIC_API_URL}/admin/plans`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch plans");
@@ -193,7 +193,7 @@ export default function Register() {
         // For free plans, skip payment process and directly register
         const registrationResponse = await api.post("/auth/register", userData);
         login(registrationResponse.data.token);
-        router.push("/invoice-/invoice");
+        router.push("/invoice");
       } else {
         // For paid plans, continue with the existing payment flow
         const orderResponse = await createOrder(userData.planId);
@@ -208,7 +208,11 @@ export default function Register() {
           order_id: orderId,
           handler: async (response: RazorpayResponse) => {
             try {
-              await verifyPayment(response);
+              await verifyPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
 
               const registrationData = {
                 ...userData,
@@ -302,8 +306,8 @@ export default function Register() {
           <Image
             src="/rr-5-10.png"
             alt="Logo"
-            width={80}
-            height={80}
+            width={200}
+            height={200}
             className="mb-8"
           />
         </div>
@@ -432,16 +436,6 @@ export default function Register() {
                 {formErrors.phone && (
                   <p className="text-red-500">{formErrors.phone}</p>
                 )}
-              </div>
-              <div>
-                <Label htmlFor="logo">Logo</Label>
-                <Input
-                  id="logo"
-                  name="logo"
-                  type="file"
-                  onChange={handleChange}
-                  accept="image/*"
-                />
               </div>
               <div>
                 <Label htmlFor="plan">Select a Plan</Label>

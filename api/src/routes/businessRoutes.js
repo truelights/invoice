@@ -15,7 +15,7 @@ const router = express.Router();
 
 router.get("/", authenticateToken, isAdmin, getBusinessInfo);
 router.put("/:_id", authenticateToken, isAdmin, updateBusinessInfo);
-router.post("/change-plan", authenticateToken, isAdmin, changePlan);
+router.put("/change-plan/:business", authenticateToken, isAdmin, changePlan);
 
 router.post("/plans", authenticateToken, isAdmin, createPlan);
 router.get("/plans", authenticateToken, getAllPlans);

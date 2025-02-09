@@ -200,7 +200,7 @@ export default function PlansPage() {
                   <CardTitle>{plan.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">${plan.price}</p>
+                  <p className="text-2xl font-bold">₹{plan.price}</p>
                   <p className="text-gray-600">{plan.description}</p>
                   <p className="text-sm text-gray-500">{plan.duration} days</p>
                   <ul className="list-disc pl-5 mt-2">

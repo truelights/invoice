@@ -35,20 +35,24 @@ router.post("/create-order", async (req, res) => {
 
 router.post("/verify-payment", async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    console.log(razorpay_order_id, razorpay_payment_id, razorpay_signature);
 
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ message: "Payment verification failed" });
+    if (!keySecret) {
+      throw new Error("RAZORPAY_KEY_SECRET is not defined");
     }
 
-    res.json({ message: "Payment verified successfully" });
+    const generatedSignature = crypto
+      .createHmac("sha256", keySecret)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    if (generatedSignature === razorpay_signature) {
+      res.json({ message: "Payment verified successfully" });
+    } else {
+      res.status(400).json({ message: "Invalid signature" });
+    }
   } catch (error) {
     console.error("Error verifying payment:", error.message);
     res.status(500).json({ message: "Error verifying payment" });

@@ -128,7 +128,7 @@ router.post("/register", upload.single("logo"), async (req, res) => {
 
     const transaction = new Plantransactions({
       amount: plan.price,
-      paymentMethod: "Online",
+      paymentMethod: "Razorpay",
       business: business._id,
       plan: planId,
       status: "Completed",
