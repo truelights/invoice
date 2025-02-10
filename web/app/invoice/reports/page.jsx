@@ -76,11 +76,13 @@ const ReportsPage = () => {
         acc.totalExpense += bill.totalExpense
         acc.netAmount += bill.netAmount
         acc.recievedAmount += bill.recievedAmount
+        acc.creditAmount += bill.netAmount - bill.recievedAmount
         return acc
       },
-      { totalAmount: 0, totalExpense: 0, netAmount: 0, recievedAmount: 0 },
+      { totalAmount: 0, totalExpense: 0, netAmount: 0, recievedAmount: 0, creditAmount: 0 },
     )
   }, [filteredBills])
+
 
   const handleRowClick = (bill) => {
     setSelectedBill(bill)
@@ -232,6 +234,7 @@ const ReportTable = ({ bills, totals, type, onRowClick }) => {
               <TableCell>₹{totals.totalExpense.toFixed(2)}</TableCell>
               <TableCell>₹{totals.netAmount.toFixed(2)}</TableCell>
               <TableCell>₹{totals.recievedAmount.toFixed(2)}</TableCell>
+              <TableCell className="text-red-600 font-bold">₹{totals.creditAmount.toFixed(2)}</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableBody>
